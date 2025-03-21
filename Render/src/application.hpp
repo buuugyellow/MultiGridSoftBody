@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Physically Based Rendering
  * Copyright (c) 2017-2018 Michał Siejak
  */
@@ -81,7 +81,7 @@ private:
 	static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 	static void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-	
+
 
 	GLFWwindow* m_window;
 	double m_prevCursorX;

@@ -202,8 +202,8 @@ namespace Utility
                 //record mouse down position
                 if (left_down && left_down != pre_left_state)
                 {
-                    down_mx = raw_mx;
-                    down_my = raw_my;
+                    down_mx = (int)raw_mx;
+                    down_my = (int)raw_my;
 
                     //printf("%d %d\n", down_mx, down_my);
                 }
@@ -257,7 +257,7 @@ namespace Utility
         void inputMouse(int x, int y, int mouse_button, int mouse_press_or_release)
         {
 
-            update(x, y);
+            update((float)x, (float)y);
             if (mouse_button == 0 && mouse_press_or_release)
             {
                 updateMouseState(0, 1);

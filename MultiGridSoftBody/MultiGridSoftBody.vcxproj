@@ -19,11 +19,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\global.h" />
     <ClCompile Include="src\imgui.cpp" />
-    <ClCompile Include="src\test.cpp" />
+    <ClCompile Include="src\Simulator.cpp" />
+    <ClCompile Include="src\SoftObject.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Solver.cpp" />
+    <ClCompile Include="src\SolverInit.cpp" />
+    <ClCompile Include="src\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\imgui.h" />
+    <ClInclude Include="src\Simulator.h" />
+    <ClInclude Include="src\SoftObject.h" />
+    <ClInclude Include="src\Solver.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -109,15 +118,15 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);GLOG_USE_GLOG_EXPORT;GLOG_NO_ABBREVIATED_SEVERITIES</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Softbody_Simulate\MultiGridSoftBody\3rd;C:\Softbody_Simulate\MultiGridSoftBody\Render\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Softbody_Simulate\MultiGridSoftBody\3rd\glog\include;C:\Softbody_Simulate\MultiGridSoftBody\3rd;C:\Softbody_Simulate\MultiGridSoftBody\Render\src;$(CUDA_PATH)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Softbody_Simulate\MultiGridSoftBody\3rd\glfw\lib-vc2022;C:\Softbody_Simulate\MultiGridSoftBody\3rd\assimp\lib;C:\Softbody_Simulate\MultiGridSoftBody\x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3dll.lib;assimp-vc143-mt.lib;Render.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Softbody_Simulate\MultiGridSoftBody\3rd\glfw\lib-vc2022;C:\Softbody_Simulate\MultiGridSoftBody\3rd\assimp\lib;C:\Softbody_Simulate\MultiGridSoftBody\x64\Debug;C:\Softbody_Simulate\MultiGridSoftBody\3rd\glog\lib;$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3dll.lib;assimp-vc143-mt.lib;Render.lib;glogd.lib;cublas.lib;cuda.lib;cudadevrt.lib;cudart.lib;cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -126,17 +135,17 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);GLOG_USE_GLOG_EXPORT;GLOG_NO_ABBREVIATED_SEVERITIES</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Softbody_Simulate\MultiGridSoftBody\3rd;C:\Softbody_Simulate\MultiGridSoftBody\Render\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Softbody_Simulate\MultiGridSoftBody\3rd\glog\include;C:\Softbody_Simulate\MultiGridSoftBody\3rd;C:\Softbody_Simulate\MultiGridSoftBody\Render\src;$(CUDA_PATH)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Softbody_Simulate\MultiGridSoftBody\3rd\glfw\lib-vc2022;C:\Softbody_Simulate\MultiGridSoftBody\3rd\assimp\lib;C:\Softbody_Simulate\MultiGridSoftBody\x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>glfw3dll.lib;assimp-vc143-mt.lib;Render.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Softbody_Simulate\MultiGridSoftBody\3rd\glfw\lib-vc2022;C:\Softbody_Simulate\MultiGridSoftBody\3rd\assimp\lib;C:\Softbody_Simulate\MultiGridSoftBody\x64\Debug;C:\Softbody_Simulate\MultiGridSoftBody\3rd\glog\lib;$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>glfw3dll.lib;assimp-vc143-mt.lib;Render.lib;glogd.lib;cuda.lib;cudadevrt.lib;cudart.lib;cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

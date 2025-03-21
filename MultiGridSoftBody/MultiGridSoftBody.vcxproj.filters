@@ -1,30 +1,60 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="源文件">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    <Filter Include="模型">
+      <UniqueIdentifier>{3baa0731-1d4d-47bf-8e15-0fc33abf2824}</UniqueIdentifier>
     </Filter>
-    <Filter Include="头文件">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    <Filter Include="GUI">
+      <UniqueIdentifier>{25c3b351-86a6-4491-bde8-8be054c057ca}</UniqueIdentifier>
     </Filter>
-    <Filter Include="资源文件">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="解算器">
+      <UniqueIdentifier>{75c175c0-0cae-48f6-94b0-e6741bee8306}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="全局类">
+      <UniqueIdentifier>{6c772e4f-5164-4cd9-b395-801b810eaacb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="工具">
+      <UniqueIdentifier>{68eda3a1-3b9b-498a-b3fe-8c278c180571}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\test.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="src\imgui.cpp">
-      <Filter>源文件</Filter>
+      <Filter>GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SoftObject.cpp">
+      <Filter>模型</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Solver.cpp">
+      <Filter>解算器</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Simulator.cpp">
+      <Filter>全局类</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>全局类</Filter>
+    </ClCompile>
+    <ClCompile Include="src\global.h">
+      <Filter>全局类</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SolverInit.cpp">
+      <Filter>解算器</Filter>
+    </ClCompile>
+    <ClCompile Include="src\utils.cpp">
+      <Filter>工具</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\imgui.h">
-      <Filter>头文件</Filter>
+      <Filter>GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SoftObject.h">
+      <Filter>模型</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Solver.h">
+      <Filter>解算器</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Simulator.h">
+      <Filter>全局类</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

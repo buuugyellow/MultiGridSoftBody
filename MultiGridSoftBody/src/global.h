@@ -1,0 +1,11 @@
+#include <string>
+
+#include "glog/logging.h"
+using namespace std;
+extern string config_objName;
+extern string config_dataDir;
+extern vector<float> g_pointsForRender;  // 仿真线程渲染线程共享的顶点数据，需要传递的包括：顶点坐标 + 法向量 + UV坐标
+extern vector<float> g_normalsForRender;
+extern vector<float> g_uvForRender;
+
+void OutputPosNormIndex(string filepath, std::vector<float> pos, std::vector<float> norm, std::vector<unsigned int> index);
