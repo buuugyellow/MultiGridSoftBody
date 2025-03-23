@@ -36,11 +36,11 @@
     <ClCompile Include="src\global.h">
       <Filter>全局类</Filter>
     </ClCompile>
-    <ClCompile Include="src\SolverInit.cpp">
-      <Filter>解算器</Filter>
-    </ClCompile>
     <ClCompile Include="src\utils.cpp">
       <Filter>工具</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PDSolver.cpp">
+      <Filter>解算器</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -56,5 +56,16 @@
     <ClInclude Include="src\Simulator.h">
       <Filter>全局类</Filter>
     </ClInclude>
+    <ClInclude Include="src\PDSolver.h">
+      <Filter>解算器</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cudaUtils.h">
+      <Filter>工具</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\PDSolver.cu">
+      <Filter>解算器</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

@@ -1,5 +1,6 @@
 #pragma once
 class Solver {
 public:
-    void Init();
+    virtual void Init() = 0;
+    virtual void Step() = 0;
 };

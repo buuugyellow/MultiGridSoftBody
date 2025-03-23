@@ -21,18 +21,25 @@
   <ItemGroup>
     <ClCompile Include="src\global.h" />
     <ClCompile Include="src\imgui.cpp" />
+    <ClCompile Include="src\PDSolver.cpp" />
     <ClCompile Include="src\Simulator.cpp" />
     <ClCompile Include="src\SoftObject.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Solver.cpp" />
-    <ClCompile Include="src\SolverInit.cpp" />
     <ClCompile Include="src\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\cudaUtils.h" />
+    <ClInclude Include="src\PDSolver.h" />
     <ClInclude Include="src\imgui.h" />
     <ClInclude Include="src\Simulator.h" />
     <ClInclude Include="src\SoftObject.h" />
     <ClInclude Include="src\Solver.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\PDSolver.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -70,6 +77,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.1.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -150,5 +158,6 @@
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.1.targets" />
   </ImportGroup>
 </Project>

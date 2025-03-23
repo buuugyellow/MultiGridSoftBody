@@ -1,4 +1,5 @@
 #include "SoftObject.h"
+#include "global.h"
 #include <fstream>
 #include <set>
 using namespace std;

@@ -1,10 +1,11 @@
-#include "Simulator.h"
+#pragma once
+#include "global.h"
+#include "PDSolver.h"
 
 #include <iostream>
 #include <set>
 #include <string>
 
-#include "global.h"
 using namespace std;
 
 Simulator& Simulator::GetInstance() {
@@ -28,8 +29,8 @@ void Simulator::ReadObjMshFiles() { m_softObject->ReadFromFile(); }
 void Simulator::CopyObjToSimulator() {
     m_tetVertPos = m_softObject->m_tetVertPosORIG;
     m_tetIdx = m_softObject->m_tetIdxORIG;
-    
-    // test 
+
+    // test
     for (int i = 0; i < m_tetVertPos.size() / 3; i++) {
         m_normal.push_back(1.0f);
         m_normal.push_back(0.0f);
@@ -140,7 +141,10 @@ void Simulator::Init() {
     TetFaceExtraction();
 
     // ½âËãÆ÷³õÊ¼»¯
+    m_solver = new PDSolver();
     m_solver->Init();
 }
 
-void Simulator::Update() {}
+void Simulator::Update() { 
+    m_solver->Step();
+}

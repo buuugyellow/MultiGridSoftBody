@@ -831,8 +831,8 @@ namespace IMGUIZMO_NAMESPACE
       segB.y /= gContext.mDisplayRatio;
       vec_t segAOrtho = makeVect(-segA.y, segA.x);
       segAOrtho.Normalize();
-      float dt = segAOrtho.Dot3(segB);
-      float surface = sqrtf(segA.x * segA.x + segA.y * segA.y) * fabsf(dt);
+      float m_dt = segAOrtho.Dot3(segB);
+      float surface = sqrtf(segA.x * segA.x + segA.y * segA.y) * fabsf(m_dt);
       return surface;
    }
 
@@ -1580,15 +1580,15 @@ namespace IMGUIZMO_NAMESPACE
             dirPlaneNormalWorld.TransformVector(directionUnary[i], gContext.mModelSource);
             dirPlaneNormalWorld.Normalize();
 
-            float dt = fabsf(Dot(Normalized(gContext.mCameraEye - gContext.mModelSource.v.position), dirPlaneNormalWorld));
-            if (dt >= bestDot)
+            float m_dt = fabsf(Dot(Normalized(gContext.mCameraEye - gContext.mModelSource.v.position), dirPlaneNormalWorld));
+            if (m_dt >= bestDot)
             {
-               bestDot = dt;
+               bestDot = m_dt;
                bestAxis = i;
                bestAxisWorldDirection = dirPlaneNormalWorld;
             }
 
-            if (dt >= 0.1f)
+            if (m_dt >= 0.1f)
             {
                axes[numAxes] = i;
                axesWorldDirections[numAxes] = dirPlaneNormalWorld;
@@ -2906,10 +2906,10 @@ namespace IMGUIZMO_NAMESPACE
          vec_t planDir = Cross(viewInverse.v.right, referenceUp);
          planDir.y = 0.f;
          planDir.Normalize();
-         float dt = Dot(planDir, newDir);
-         if (dt < 0.0f)
+         float m_dt = Dot(planDir, newDir);
+         if (m_dt < 0.0f)
          {
-            newDir += planDir * dt;
+            newDir += planDir * m_dt;
             newDir.Normalize();
          }
 

@@ -1,8 +1,6 @@
 #pragma once
 #include <string>
 #include <vector>
-#include "global.h"
-
 using namespace std;
 
 class SoftObject {
