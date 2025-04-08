@@ -19,8 +19,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\3rd\imgui\imgui.cpp" />
+    <ClCompile Include="..\3rd\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\3rd\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\3rd\imgui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="..\3rd\imgui\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="..\3rd\imgui\imgui_tables.cpp" />
+    <ClCompile Include="..\3rd\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\global.h" />
-    <ClCompile Include="src\imgui.cpp" />
+    <ClCompile Include="src\gui.cpp" />
     <ClCompile Include="src\PDSolver.cpp" />
     <ClCompile Include="src\Simulator.cpp" />
     <ClCompile Include="src\SoftObject.cpp" />
@@ -29,9 +36,18 @@
     <ClCompile Include="src\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\3rd\imgui\imconfig.h" />
+    <ClInclude Include="..\3rd\imgui\imgui.h" />
+    <ClInclude Include="..\3rd\imgui\imgui_impl_glfw.h" />
+    <ClInclude Include="..\3rd\imgui\imgui_impl_opengl3.h" />
+    <ClInclude Include="..\3rd\imgui\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="..\3rd\imgui\imgui_internal.h" />
+    <ClInclude Include="..\3rd\imgui\imstb_rectpack.h" />
+    <ClInclude Include="..\3rd\imgui\imstb_textedit.h" />
+    <ClInclude Include="..\3rd\imgui\imstb_truetype.h" />
     <ClInclude Include="src\cudaUtils.h" />
     <ClInclude Include="src\PDSolver.h" />
-    <ClInclude Include="src\imgui.h" />
+    <ClInclude Include="src\gui.h" />
     <ClInclude Include="src\Simulator.h" />
     <ClInclude Include="src\SoftObject.h" />
     <ClInclude Include="src\Solver.h" />

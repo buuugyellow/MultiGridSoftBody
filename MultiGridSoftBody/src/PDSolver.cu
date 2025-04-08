@@ -112,8 +112,10 @@ void runCalculateST(float m_damping, float m_dt, float m_gravityX, float m_gravi
     int blockNum = (tetVertNum + threadNum - 1) / threadNum;
     calculateST<<<blockNum, threadNum>>>(tetVertPos_d, tetVertVelocity_d, tetVertExternForce_d, tetVertPos_old_d, tetVertPos_prev_d, tetVertPos_last_d,
                                          tetVertFixed_d, m_gravityX, m_gravityY, m_gravityZ, tetVertNum, m_damping, m_dt);
+#ifdef PRINT_CUDA_ERROR
     cudaDeviceSynchronize();
     printCudaError("runcalculateST");
+#endif  // PRINT_CUDA_ERROR
 }
 
 void runClearTemp() { cudaMemset(tetVertForce_d, 0.0f, tetVertNum * 3 * sizeof(float)); }
@@ -179,8 +181,10 @@ void runCalculateIF(float m_volumnStiffness) {
     int threadNum = 512;
     int blockNum = (tetNum + threadNum - 1) / threadNum;
     calculateIF<<<blockNum, threadNum>>>(tetVertPos_d, tetIndex_d, tetInvD3x3_d, tetInvD3x4_d, tetVertForce_d, tetVolume_d, tetNum, m_volumnStiffness);
+#ifdef PRINT_CUDA_ERROR
     cudaDeviceSynchronize();
     printCudaError("runCalculateIF");
+#endif  //  PRINT_CUDA_ERROR
 }
 
 __global__ void calculatePOS(float* positions, float* force, float* fixed, float* mass, float* next_positions, float* prev_positions, float* old_positions,
@@ -231,8 +235,11 @@ void runcalculatePOS(float omega, float m_dt) {
     int blockNum = (tetVertNum + threadNum - 1) / threadNum;
     calculatePOS<<<blockNum, threadNum>>>(tetVertPos_d, tetVertForce_d, tetVertFixed_d, tetVertMass_d, tetVertPos_next_d, tetVertPos_prev_d, tetVertPos_old_d,
                                           tetVolumeDiag_d, tetVertNum, m_dt, omega);
+
+#ifdef PRINT_CUDA_ERROR
     cudaDeviceSynchronize();
     printCudaError("runCalculatePOS");
+#endif  //  PRINT_CUDA_ERROR
 }
 
 __global__ void calculateV(float* positions, float* velocity, float* last_positions, int vertexNum, float m_dt) {
@@ -248,8 +255,10 @@ void runCalculateV(float m_dt) {
     int threadNum = 512;
     int blockNum = (tetVertNum + threadNum - 1) / threadNum;
     calculateV<<<blockNum, threadNum>>>(tetVertPos_d, tetVertVelocity_d, tetVertPos_last_d, tetVertNum, m_dt);
+#ifdef PRINT_CUDA_ERROR
     cudaDeviceSynchronize();
     printCudaError("runCalculateV");
+#endif  //  PRINT_CUDA_ERROR
 }
 
 void runCpyTetVertForRender() { cudaMemcpy(g_simulator->m_tetVertPos.data(), tetVertPos_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost); }

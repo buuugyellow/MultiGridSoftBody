@@ -1,7 +1,9 @@
 #include "PDSolver.h"
 #include "global.h"
 #include <iostream>
+#include <chrono>
 using namespace std;
+double duration_physical = 0;
 
 void runInitialize(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h,
                               float* tetVolumeDiag_h, float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h);
@@ -105,6 +107,7 @@ void PDSolver::Init() {
 }
 
 void PDSolver::Step() {
+    auto start = std::chrono::high_resolution_clock::now();
     runCalculateST(m_damping, m_dt, m_gravityX, m_gravityY, m_gravityZ);
     float omega = 1.0f;
     for (int i = 0; i < m_iterNum; i++) {
@@ -115,4 +118,8 @@ void PDSolver::Step() {
     }
     runCalculateV(m_dt);
     runCpyTetVertForRender();
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    duration_physical = duration.count();
 }

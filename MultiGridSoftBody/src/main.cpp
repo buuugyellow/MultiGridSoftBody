@@ -8,8 +8,13 @@
 #include "global.h"
 #include "Simulator.h"
 #include "application.hpp"
-#include "imgui.h"
+#include "gui.h"
 
+#include "imgui/imgui_impl_opengl3.h"
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
+#include "global.h"
 using namespace std;
 
 string config_dataDir = "../data/";
@@ -87,7 +92,7 @@ void renderLoop() {
                 // g_pointsNormalsUVForRender[i * 9 + 8] = 0.0f;
             }
         }
-
+        GImGui;
         g_render->UpdateMesh(g_simulator->m_softObject->m_renderObjId, g_simulator->m_tetFaceIdx.size(),
                              g_simulator->m_tetFaceIdx.size() * sizeof(unsigned int), g_simulator->m_tetFaceIdx.data(),
                              g_pointsNormalsUVForRender.size() * sizeof(float), g_pointsNormalsUVForRender.data());
@@ -97,14 +102,12 @@ void renderLoop() {
 }
 
 void init() {
-    FLAGS_log_dir = config_logDir; 
+    //FLAGS_log_dir = "../temp/log/"; 
+    cout << "dir: " << FLAGS_log_dir << endl;
     google::InitGoogleLogging("MultiGridSoftBody");
-
     initCuda();
-
     g_simulator = &Simulator::GetInstance();
     g_simulator->Init();
-
     g_pointsNormalsUVForRender.resize(g_simulator->m_tetVertPos.size() * 3);
     g_pointsForRender.resize(g_simulator->m_tetVertPos.size());
     g_normalsForRender.resize(g_simulator->m_tetVertPos.size());
