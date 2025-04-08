@@ -102,7 +102,9 @@ void renderLoop() {
 }
 
 void init() {
-    //FLAGS_log_dir = "../temp/log/"; 
+    string s = "../temp/log/"; 
+    cout << "dir: " << FLAGS_log_dir << endl;
+    FLAGS_log_dir = s;
     cout << "dir: " << FLAGS_log_dir << endl;
     google::InitGoogleLogging("MultiGridSoftBody");
     initCuda();
