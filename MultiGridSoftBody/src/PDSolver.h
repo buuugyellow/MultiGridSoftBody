@@ -4,8 +4,8 @@
 using namespace std;
 class PDSolver : public Solver {
 public:
-    int m_iterNum = 12;
-    float m_dt = 0.01f;
+    int m_iterNum = 16;
+    float m_dt = 1.0f / 30.0f;
     float m_damping = 0.5f;
     float m_volumnStiffness = 1000.0f;
     float m_rho = 0.9992f;

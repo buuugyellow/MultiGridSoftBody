@@ -14,7 +14,7 @@ using namespace std;
 
 string config_dataDir = "../data/";
 string config_logDir = "../temp/log/";
-string config_objName = "cubetest"; // 单一物体
+string config_objName = "cube40_4_4"; // 单一物体
 
 Application* g_render;
 Simulator* g_simulator;

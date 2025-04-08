@@ -253,3 +253,27 @@ void runCalculateV(float m_dt) {
 }
 
 void runCpyTetVertForRender() { cudaMemcpy(g_simulator->m_tetVertPos.data(), tetVertPos_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost); }
+
+//////////////////////////////////////////// test code ////////////////////////////////////////////
+
+
+double deltaXFirst = 0;
+void runTestConvergence(int iter) {
+    int threadNum = 512;
+    int blockNum = (tetVertNum + threadNum - 1) / threadNum;
+    vector<float> tetVertPos_prev_h(tetVertNum * 3);
+    vector<float> tetVertPos_h(tetVertNum * 3);
+    cudaMemcpy(tetVertPos_h.data(), tetVertPos_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(tetVertPos_prev_h.data(), tetVertPos_prev_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
+    
+    // º∆À„ deltaX
+    double deltaX = 0;
+    double deltaXRate = 1;
+    for (int i = 0; i < tetVertNum * 3; i++) {
+        deltaX += (tetVertPos_h[i] - tetVertPos_prev_h[i]) * (tetVertPos_h[i] - tetVertPos_prev_h[i]);
+    }
+    deltaX = sqrt(deltaX);
+    if (iter == 0) deltaXFirst = deltaX;
+    deltaXRate = (iter == 0) ? 1 : (deltaX / deltaXFirst);
+    printf("iter: %d, deltaX: %f, rate: %f\n", iter, deltaX, deltaXRate);
+}
