@@ -14,7 +14,7 @@ void printCudaError(const char* funcName) {
 }
 
 // R=A*B
-__device__ void MatrixProduct_3_D(const float* A, const float* B, float* R) {
+__device__ __host__ void MatrixProduct_3_D(const float* A, const float* B, float* R) {
     R[0] = A[0] * B[0] + A[1] * B[3] + A[2] * B[6];
     R[1] = A[0] * B[1] + A[1] * B[4] + A[2] * B[7];
     R[2] = A[0] * B[2] + A[1] * B[5] + A[2] * B[8];
@@ -27,19 +27,19 @@ __device__ void MatrixProduct_3_D(const float* A, const float* B, float* R) {
 }
 
 // R=A-B
-__device__ void MatrixSubstract_3_D(float* A, float* B, float* R) {
+__device__ __host__ void MatrixSubstract_3_D(float* A, float* B, float* R) {
     for (int i = 0; i < 9; i++) R[i] = A[i] - B[i];
 }
 
 // R=A*B
-__device__ void MatrixProduct_D(float* A, float* B, float* R, int nx, int ny, int nz) {
+__device__ __host__ void MatrixProduct_D(float* A, float* B, float* R, int nx, int ny, int nz) {
     memset(R, 0, sizeof(float) * nx * nz);
     for (int i = 0; i < nx; i++)
         for (int j = 0; j < nz; j++)
             for (int k = 0; k < ny; k++) R[i * nz + j] += A[i * ny + k] * B[k * nz + j];
 }
 
-__device__ void GetRotation_D(float F[3][3], float R[3][3]) {
+__device__ __host__ void GetRotation_D(float F[3][3], float R[3][3]) {
     float C[3][3];
     memset(&C[0][0], 0, sizeof(float) * 9);
     for (int i = 0; i < 3; i++)

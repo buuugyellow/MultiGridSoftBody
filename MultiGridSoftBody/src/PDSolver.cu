@@ -267,13 +267,11 @@ void runCpyTetVertForRender() { cudaMemcpy(g_simulator->m_tetVertPos.data(), tet
 
 double deltaXFirst = 0;
 void runTestConvergence(int iter) {
-    int threadNum = 512;
-    int blockNum = (tetVertNum + threadNum - 1) / threadNum;
     vector<float> tetVertPos_prev_h(tetVertNum * 3);
     vector<float> tetVertPos_h(tetVertNum * 3);
     cudaMemcpy(tetVertPos_h.data(), tetVertPos_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(tetVertPos_prev_h.data(), tetVertPos_prev_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
-    
+
     // 计算 deltaX
     double deltaX = 0;
     double deltaXRate = 1;
@@ -284,4 +282,73 @@ void runTestConvergence(int iter) {
     if (iter == 0) deltaXFirst = deltaX;
     deltaXRate = (iter == 0) ? 1 : (deltaX / deltaXFirst);
     printf("iter: %d, deltaX: %f, rate: %f\n", iter, deltaX, deltaXRate);
+}
+
+void runCalEnergy(int iter, float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex, const vector<float>& m_tetInvD3x3,
+                  const vector<float>& m_tetVolume, float m_volumnStiffness) {
+    vector<float> tetVertPos_h(tetVertNum * 3);
+    vector<float> tetVertPos_old_h(tetVertNum * 3);
+    vector<float> tetVertPos_prev_h(tetVertNum * 3);
+    cudaMemcpy(tetVertPos_h.data(), tetVertPos_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(tetVertPos_old_h.data(), tetVertPos_old_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(tetVertPos_prev_h.data(), tetVertPos_prev_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
+
+    // 计算 deltaX, Ek
+    double deltaX = 0;
+    double Ek = 0;
+    for (int i = 0; i < tetVertNum; i++) {
+        float vx = tetVertPos_h[i * 3 + 0];
+        float vy = tetVertPos_h[i * 3 + 1];
+        float vz = tetVertPos_h[i * 3 + 2];
+        float vx_pre = tetVertPos_prev_h[i * 3 + 0];
+        float vy_pre = tetVertPos_prev_h[i * 3 + 1];
+        float vz_pre = tetVertPos_prev_h[i * 3 + 2];
+        float vx_st = tetVertPos_old_h[i * 3 + 0];
+        float vy_st = tetVertPos_old_h[i * 3 + 1];
+        float vz_st = tetVertPos_old_h[i * 3 + 2];
+
+        deltaX += (pow((vx - vx_pre), 2) + pow((vy - vy_pre), 2) + pow((vz - vz_pre), 2));
+        Ek += m_tetVertMass[i] * (pow((vx - vx_st), 2) + pow((vy - vy_st), 2) + pow((vz - vz_st), 2));
+    }
+    deltaX = sqrt(deltaX);
+    Ek = Ek / (2 * m_dt * m_dt);
+
+    // 计算 Ep
+    double Ep = 0;
+    for (int i = 0; i < tetNum; i++) {
+        int vIndex0 = m_tetIndex[i * 4 + 0];
+        int vIndex1 = m_tetIndex[i * 4 + 1];
+        int vIndex2 = m_tetIndex[i * 4 + 2];
+        int vIndex3 = m_tetIndex[i * 4 + 3];
+
+        // 先计算shape矩阵
+        float D[9];
+        D[0] = tetVertPos_h[vIndex1 * 3 + 0] - tetVertPos_h[vIndex0 * 3 + 0];
+        D[1] = tetVertPos_h[vIndex2 * 3 + 0] - tetVertPos_h[vIndex0 * 3 + 0];
+        D[2] = tetVertPos_h[vIndex3 * 3 + 0] - tetVertPos_h[vIndex0 * 3 + 0];
+        D[3] = tetVertPos_h[vIndex1 * 3 + 1] - tetVertPos_h[vIndex0 * 3 + 1];
+        D[4] = tetVertPos_h[vIndex2 * 3 + 1] - tetVertPos_h[vIndex0 * 3 + 1];
+        D[5] = tetVertPos_h[vIndex3 * 3 + 1] - tetVertPos_h[vIndex0 * 3 + 1];
+        D[6] = tetVertPos_h[vIndex1 * 3 + 2] - tetVertPos_h[vIndex0 * 3 + 2];
+        D[7] = tetVertPos_h[vIndex2 * 3 + 2] - tetVertPos_h[vIndex0 * 3 + 2];
+        D[8] = tetVertPos_h[vIndex3 * 3 + 2] - tetVertPos_h[vIndex0 * 3 + 2];
+
+        // 计算形变梯度F
+        float F[9];
+        MatrixProduct_3_D(D, &m_tetInvD3x3[i * 9], F);
+
+        // 从F中分解出R（直接搬运，这个算法太复杂了）
+        float R[9];
+        GetRotation_D((float(*)[3])F, (float(*)[3])R);  // 转化为数组指针，即对应二维数组的形参要求
+
+        double e = 0;
+        for (int i = 0; i < 9; i++) {
+            e += pow((F[i] - R[i]), 2);
+        }
+        e = e * m_tetVolume[i] * m_volumnStiffness / 2;
+
+        Ep += e;
+    }
+
+    printf("iter = %d, Energy = %f, Ek = %f, Ep = %f, deltaX = %f\n", iter, Ek + Ep, Ek, Ep, deltaX);
 }

@@ -1,12 +1,14 @@
 #include "PDSolver.h"
-#include "global.h"
-#include <iostream>
+
 #include <chrono>
+#include <iostream>
+
+#include "global.h"
 using namespace std;
 double duration_physical = 0;
 
-void runInitialize(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h,
-                              float* tetVolumeDiag_h, float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h);
+void runInitialize(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
+                   float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h);
 void runCalculateST(float m_damping, float m_dt, float m_gravityX, float m_gravityY, float m_gravityZ);
 void runClearTemp();
 void runCalculateIF(float m_volumnStiffness);
@@ -14,6 +16,8 @@ void runcalculatePOS(float omega, float m_dt);
 void runCalculateV(float m_dt);
 void runCpyTetVertForRender();
 void runTestConvergence(int iter);
+void runCalEnergy(int iter, float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex, const vector<float>& m_tetInvD3x3,
+                  const vector<float>& m_tetVolume, float m_volumnStiffness);
 
 void PDSolver::InitVolumeConstraint() {
     m_tetVertMass.resize(m_tetVertNum);
@@ -97,6 +101,15 @@ void PDSolver::SetFixedVert() {
 }
 
 void PDSolver::Init() {
+    m_iterNum = 16;
+    m_dt = 1.0f / 30.0f;
+    m_damping = 0.5f;
+    m_volumnStiffness = 1000.0f;
+    m_rho = 0.9992f;
+    m_gravityX = 0.0f;
+    m_gravityY = -9.8f;
+    m_gravityZ = 0.0f;
+
     m_tetNum = g_simulator->m_tetIdx.size() / 4;
     m_tetVertNum = g_simulator->m_tetVertPos.size() / 3;
     m_tetIndex = g_simulator->m_tetIdx;
@@ -112,13 +125,12 @@ void PDSolver::Step() {
     runCalculateST(m_damping, m_dt, m_gravityX, m_gravityY, m_gravityZ);
     float omega = 1.0f;
     for (int i = 0; i < m_iterNum; i++) {
+        runCalEnergy(i, m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness);  // 计算能量，测 fps 时需要注释
+
         runClearTemp();
         runCalculateIF(m_volumnStiffness);
         omega = 4 / (4 - m_rho * m_rho * omega);
         runcalculatePOS(omega, m_dt);
-
-        // 计算收敛性，在测 fps 的时候需要注释
-        //runTestConvergence(i);
     }
     runCalculateV(m_dt);
     runCpyTetVertForRender();

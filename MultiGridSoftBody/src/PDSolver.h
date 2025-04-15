@@ -1,17 +1,18 @@
 #pragma once
-#include "Solver.h"
 #include <vector>
+
+#include "Solver.h"
 using namespace std;
 class PDSolver : public Solver {
 public:
-    int m_iterNum = 16;
-    float m_dt = 1.0f / 30.0f;
-    float m_damping = 0.5f;
-    float m_volumnStiffness = 1000.0f;
-    float m_rho = 0.9992f;
-    float m_gravityX = 0.0f;
-    float m_gravityY = -9.8f;
-    float m_gravityZ = 0.0f;
+    int m_iterNum;
+    float m_dt;
+    float m_damping;
+    float m_volumnStiffness;
+    float m_rho;
+    float m_gravityX;
+    float m_gravityY;
+    float m_gravityZ;
 
     int m_tetNum;
     int m_tetVertNum;
