@@ -196,13 +196,13 @@ void Application::keyCallback(GLFWwindow* window, int key, int scancode, int act
 		case GLFW_KEY_ESCAPE:
 			Application::Instance()->m_running = false;
 		case GLFW_KEY_F1:
-			LoadCam("cam1.txt");
+			LoadCam("../data/cam1.txt");
 			break;
 		case GLFW_KEY_F2:
-			LoadCam("cam1.txt");
+            LoadCam("../data/cam2.txt");
 			break;
 		case GLFW_KEY_F3:
-			LoadCam("cam1.txt");
+            LoadCam("../data/cam3.txt");
 			break;
 		case GLFW_KEY_F11:
 			SaveCam();

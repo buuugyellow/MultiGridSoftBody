@@ -13,6 +13,7 @@ void runCalculateIF(float m_volumnStiffness);
 void runcalculatePOS(float omega, float m_dt);
 void runCalculateV(float m_dt);
 void runCpyTetVertForRender();
+void runTestConvergence(int iter);
 
 void PDSolver::InitVolumeConstraint() {
     m_tetVertMass.resize(m_tetVertNum);
@@ -115,6 +116,9 @@ void PDSolver::Step() {
         runCalculateIF(m_volumnStiffness);
         omega = 4 / (4 - m_rho * m_rho * omega);
         runcalculatePOS(omega, m_dt);
+
+        // 计算收敛性，在测 fps 的时候需要注释
+        //runTestConvergence(i);
     }
     runCalculateV(m_dt);
     runCpyTetVertForRender();
