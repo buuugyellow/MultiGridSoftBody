@@ -265,7 +265,6 @@ void runCpyTetVertForRender() { cudaMemcpy(g_simulator->m_tetVertPos.data(), tet
 
 //////////////////////////////////////////// test code ////////////////////////////////////////////
 
-
 double deltaXFirst = 0;
 void runTestConvergence(int iter) {
     int threadNum = 512;

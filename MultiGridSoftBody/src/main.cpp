@@ -17,9 +17,9 @@
 #include "global.h"
 using namespace std;
 
-string config_dataDir = "../data/";
-string config_logDir = "../temp/log/";
-string config_objName = "cube40_4_4"; // 单一物体
+string config_dataDir;
+string config_logDir;
+string config_objName; // 单一物体
 
 Application* g_render;
 Simulator* g_simulator;
@@ -102,10 +102,11 @@ void renderLoop() {
 }
 
 void init() {
-    string s = "../temp/log/"; 
-    cout << "dir: " << FLAGS_log_dir << endl;
-    FLAGS_log_dir = s;
-    cout << "dir: " << FLAGS_log_dir << endl;
+    config_dataDir = "../data/";
+    config_logDir = "../temp/log/";
+    config_objName = "cube20_2_2";  // 单一物体
+    FLAGS_log_dir = "../temp/log/";
+
     google::InitGoogleLogging("MultiGridSoftBody");
     initCuda();
     g_simulator = &Simulator::GetInstance();

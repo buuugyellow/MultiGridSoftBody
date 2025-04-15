@@ -1,5 +1,5 @@
 #pragma once
-//#define PRINT_CUDA_ERROR
+#define PRINT_CUDA_ERROR
 #include <string>
 
 #include "Simulator.h"

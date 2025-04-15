@@ -146,8 +146,8 @@ void Simulator::Init() {
 }
 
 void Simulator::Update() { 
-    static int cnt = 0;
-    if (++cnt > 301) return;
-    cout << "step frame " << cnt << endl;
+    //static int cnt = 0;
+    //if (++cnt > 301) return;
+    //cout << "step frame " << cnt << endl;
     m_solver->Step();
 }

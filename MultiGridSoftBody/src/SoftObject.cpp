@@ -1,7 +1,9 @@
 #include "SoftObject.h"
-#include "global.h"
+
 #include <fstream>
 #include <set>
+
+#include "global.h"
 using namespace std;
 void SoftObject::ReadFromFile() {
     const uint32_t kMaxLineLength = 1024;
@@ -9,78 +11,80 @@ void SoftObject::ReadFromFile() {
 
 #pragma region
     fstream file(m_objFile.c_str());
-    if (!file) return;
+    if (file) {
+        float x, y, z, u, v;
+        while (file) {
+            file >> buffer;
 
-    float x, y, z, u, v;
-    while (file) {
-        file >> buffer;
+            if (strcmp(buffer, "vn") == 0) {  // normals
+                file >> x >> y >> z;
+            } else if (strcmp(buffer, "vt") == 0) {
+                // texture coords
+                file >> u >> v;
+                m_triUV.push_back(u);
+                m_triUV.push_back(v);
+            } else if (buffer[0] == 'v') {  // positions
+                file >> x >> y >> z;
+                m_triVertPos.push_back(x);
+                m_triVertPos.push_back(y);
+                m_triVertPos.push_back(z);
+            } else if (buffer[0] == 'f') {
+                // faces
+                int pi[3];   // 三角形三个点
+                int uvi[3];  // 三角形三个点的uv坐标
+                for (int i = 0; i < 3; ++i) {
+                    int v = -1;
+                    int vt = 1;
+                    int vn = -1;
 
-        if (strcmp(buffer, "vn") == 0) {  // normals
-            file >> x >> y >> z;
-        } else if (strcmp(buffer, "vt") == 0) {
-            // texture coords
-            file >> u >> v;
-            m_triUV.push_back(u);
-            m_triUV.push_back(v);
-        } else if (buffer[0] == 'v') {  // positions
-            file >> x >> y >> z;
-            m_triVertPos.push_back(x);
-            m_triVertPos.push_back(y);
-            m_triVertPos.push_back(z);
-        } else if (buffer[0] == 'f') {
-            // faces
-            int pi[3];   // 三角形三个点
-            int uvi[3];  // 三角形三个点的uv坐标
-            for (int i = 0; i < 3; ++i) {
-                int v = -1;
-                int vt = 1;
-                int vn = -1;
-
-                file >> v;
-                if (!file.eof()) {
-                    // failed to read another index continue on
-                    if (file.fail()) {
-                        file.clear();
-                        break;
-                    }
-
-                    if (file.peek() == '/') {
-                        file.ignore();
-
-                        if (file.peek() != '/') {
-                            file >> vt;
+                    file >> v;
+                    if (!file.eof()) {
+                        // failed to read another index continue on
+                        if (file.fail()) {
+                            file.clear();
+                            break;
                         }
 
                         if (file.peek() == '/') {
                             file.ignore();
-                            file >> vn;
+
+                            if (file.peek() != '/') {
+                                file >> vt;
+                            }
+
+                            if (file.peek() == '/') {
+                                file.ignore();
+                                file >> vn;
+                            }
                         }
                     }
-                }
 
-                pi[i] = v - 1;
-                uvi[i] = vt - 1;
-            }  // for (int i = 0; i < 3; ++i)
-            m_triIdx.push_back(pi[0]);
-            m_triIdx.push_back(pi[1]);
-            m_triIdx.push_back(pi[2]);
-            m_triUVIdx.push_back(uvi[0]);
-            m_triUVIdx.push_back(uvi[1]);
-            m_triUVIdx.push_back(uvi[2]);
-        }  // else if (buffer[0] == 'f')
-        else {
-            char linebuf[1024];
-            file.getline(linebuf, 1024);
+                    pi[i] = v - 1;
+                    uvi[i] = vt - 1;
+                }  // for (int i = 0; i < 3; ++i)
+                m_triIdx.push_back(pi[0]);
+                m_triIdx.push_back(pi[1]);
+                m_triIdx.push_back(pi[2]);
+                m_triUVIdx.push_back(uvi[0]);
+                m_triUVIdx.push_back(uvi[1]);
+                m_triUVIdx.push_back(uvi[2]);
+            }  // else if (buffer[0] == 'f')
+            else {
+                char linebuf[1024];
+                file.getline(linebuf, 1024);
+            }
         }
-    }
-    file.close();
+        file.close();
 
-    if (0 == m_triUV.size()) m_triUV.resize(m_triVertPos.size() / 3 * 2);
+        if (0 == m_triUV.size()) m_triUV.resize(m_triVertPos.size() / 3 * 2);
+    } else {
+        LOG(ERROR) << ("打开 obj 文件错误：" + m_objFile);
+    }
 #pragma endregion 读取OBJ文件
 
 #pragma region
     LOG(INFO) << ("开始读取四面体：" + m_tetFile);
-    
+
     int eleNum;
     int number = 0;
 
@@ -125,7 +129,6 @@ void SoftObject::ReadFromFile() {
     LOG(INFO) << ("读取完毕：" + m_tetFile);
 #pragma endregion 读取四面体文件
 
-    
 #ifdef _DEBUG
     // 检测是否有重合顶点
     size_t tetVertNumO = m_tetVertPosORIG.size() / 3;
@@ -145,6 +148,5 @@ void SoftObject::ReadFromFile() {
     }
 #endif  // _DEBUG
 
-    
 #pragma endregion 检测重合四面体顶点
 }
