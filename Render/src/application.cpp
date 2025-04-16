@@ -114,7 +114,7 @@ void Application::InitRender(std::string& hdrfile, std::string& shaderfolder, st
 	m_renderer->m_sceneobject->m_hdrfile = hdrfile;
 	m_renderer->m_sceneobject->m_shaderFolder = shaderfolder;
 	m_renderer->m_sceneobject->initialize();
-	LoadCam("cam1.txt");
+    LoadCam("../data/cam1.txt");
 	glLineWidth(3);
 }
 
