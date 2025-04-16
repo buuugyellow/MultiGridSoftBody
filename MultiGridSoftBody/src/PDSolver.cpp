@@ -115,6 +115,7 @@ void PDSolver::Init() {
     m_tetIndex = g_simulator->m_tetIdx;
     m_tetVertPos = g_simulator->m_tetVertPos;
     InitVolumeConstraint();
+    LOG(INFO) << "InitVolumeConstraint ½áÊø";
     SetFixedVert();
     runInitialize(m_tetNum, m_tetVertNum, m_tetIndex.data(), m_tetInvD3x3.data(), m_tetInvD3x4.data(), m_tetVolume.data(), m_tetVolumeDiag.data(),
                   m_tetVertMass.data(), m_tetVertFixed.data(), m_tetVertPos.data());

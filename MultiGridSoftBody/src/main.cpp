@@ -17,7 +17,6 @@
 using namespace std;
 
 string config_dataDir;
-string config_logDir;
 string config_objName;  // 单一物体
 string config_energyOutputCsv;
 FILE* energyOutputFile;
@@ -104,10 +103,11 @@ void renderLoop() {
 
 void init() {
     config_dataDir = "../data/";
-    config_logDir = "../temp/log/";
     config_objName = "cube80_8_8";  // 单一物体
     FLAGS_log_dir = "../temp/log/";
     config_energyOutputCsv = "../temp/energy.csv";
+    FLAGS_logtostderr = true;
+    FLAGS_stderrthreshold = 0;
     google::InitGoogleLogging("MultiGridSoftBody");
     errno_t err = fopen_s(&energyOutputFile, config_energyOutputCsv.c_str(), "w+");
     if (err) {
@@ -123,6 +123,7 @@ void init() {
     g_pointsForRender.resize(g_simulator->m_tetVertPos.size());
     g_normalsForRender.resize(g_simulator->m_tetVertPos.size());
     thread(renderLoop).detach();
+    LOG(INFO) << "main init 结束";
 }
 
 void run() {

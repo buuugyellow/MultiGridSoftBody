@@ -137,9 +137,11 @@ void Simulator::Init() {
     // 模型初始化
     SetObjConfig();
     ReadObjMshFiles();
+    LOG(INFO) << "ReadObjMshFiles 结束";
     CopyObjToSimulator();
+    LOG(INFO) << "CopyObjToSimulator 结束";
     TetFaceExtraction();
-
+    LOG(INFO) << "TetFaceExtraction 结束";
     // 解算器初始化
     m_solver = new PDSolver();
     m_solver->Init();
