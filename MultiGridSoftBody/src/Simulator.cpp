@@ -115,16 +115,16 @@ void Simulator::TetFaceExtraction() {
                 }
             }
         }
+    }
 
-        for (auto& f : outsideFace) {
-            // 这里是用 MyFace 的原始顶点索引，而不是排序后的顶点索引
-            int verIdx0 = f.f[0];
-            int verIdx1 = f.f[1];
-            int verIdx2 = f.f[2];
-            m_tetFaceIdx.push_back(verIdx0);
-            m_tetFaceIdx.push_back(verIdx1);
-            m_tetFaceIdx.push_back(verIdx2);
-        }
+    for (auto& f : outsideFace) {
+        // 这里是用 MyFace 的原始顶点索引，而不是排序后的顶点索引
+        int verIdx0 = f.f[0];
+        int verIdx1 = f.f[1];
+        int verIdx2 = f.f[2];
+        m_tetFaceIdx.push_back(verIdx0);
+        m_tetFaceIdx.push_back(verIdx1);
+        m_tetFaceIdx.push_back(verIdx2);
     }
 
     // 输出obj查看
@@ -148,8 +148,8 @@ void Simulator::Init() {
 }
 
 void Simulator::Update() { 
-    //static int cnt = 0;
-    //if (++cnt > 301) return;
-    //cout << "step frame " << cnt << endl;
+    static int cnt = 0;
+    if (++cnt > 301) return;
+    cout << "step frame " << cnt << endl;
     m_solver->Step();
 }
