@@ -350,5 +350,5 @@ void runCalEnergy(int iter, float m_dt, const vector<float>& m_tetVertMass, cons
         Ep += e;
     }
 
-    printf("iter = %d, Energy = %f, Ek = %f, Ep = %f, deltaX = %f\n", iter, Ek + Ep, Ek, Ep, deltaX);
+    fprintf(energyOutputFile ,"%d,%f,%f,%f,%f\n", iter, Ek + Ep, Ek, Ep, deltaX);
 }

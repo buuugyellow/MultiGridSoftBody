@@ -1,32 +1,33 @@
 ﻿#include <cuda_runtime.h>
 
+#include <fstream>
 #include <iostream>
 #include <mutex>
 #include <string>
 #include <thread>
 
-#include "global.h"
 #include "Simulator.h"
 #include "application.hpp"
-#include "gui.h"
-
-#include "imgui/imgui_impl_opengl3.h"
-#include "imgui/imgui_impl_glfw.h"
-#include "imgui/imgui.h"
-#include "imgui/imgui_internal.h"
 #include "global.h"
+#include "gui.h"
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_glfw.h"
+#include "imgui/imgui_impl_opengl3.h"
+#include "imgui/imgui_internal.h"
 using namespace std;
 
 string config_dataDir;
 string config_logDir;
-string config_objName; // 单一物体
+string config_objName;  // 单一物体
+string config_energyOutputCsv;
+FILE* energyOutputFile;
 
 Application* g_render;
 Simulator* g_simulator;
 
 mutex mtx;                        // 管理 CPU 上的顶点数据，仿真线程写，渲染线程读
 vector<float> g_pointsForRender;  // 仿真线程渲染线程共享的顶点数据，需要传递的包括：顶点坐标 + 法向量 + UV坐标
-vector<float> g_normalsForRender; 
+vector<float> g_normalsForRender;
 vector<float> g_uvForRender;
 vector<float> g_pointsNormalsUVForRender;
 
@@ -104,10 +105,17 @@ void renderLoop() {
 void init() {
     config_dataDir = "../data/";
     config_logDir = "../temp/log/";
-    config_objName = "cube20_2_2";  // 单一物体
+    config_objName = "cube80_8_8";  // 单一物体
     FLAGS_log_dir = "../temp/log/";
-
+    config_energyOutputCsv = "../temp/energy.csv";
     google::InitGoogleLogging("MultiGridSoftBody");
+    errno_t err = fopen_s(&energyOutputFile, config_energyOutputCsv.c_str(), "w+");
+    if (err) {
+        LOG(ERROR) << "打开 csv 文件失败";
+    } else {
+        fprintf(energyOutputFile, "iter,Energy,Ek,Ep,deltaX\n");
+    }
+
     initCuda();
     g_simulator = &Simulator::GetInstance();
     g_simulator->Init();
