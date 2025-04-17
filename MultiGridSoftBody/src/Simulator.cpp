@@ -45,14 +45,31 @@ void Simulator::Init() {
     }
 
     // 解算器初始化
-    m_solver = new PDSolver();
-    m_solver->Init(m_tetIdx, m_tetVertPos);
-    LOG(INFO) << "solver Init 结束";
+    switch (m_solverType) {
+        case PD:
+            m_solver = new PDSolver();
+            m_solver->Init(m_tetIdx, m_tetVertPos);
+            break;
+        case PD_MG:
+            m_solver_mg = new PDSolver_MG();
+            m_solver_mg->Init(m_softObject_coarse->m_tetIdxORIG, m_softObject_coarse->m_tetVertPosORIG, m_softObject->m_tetIdxORIG,
+                              m_softObject->m_tetVertPosORIG);
+            break;
+    }
+    LOG(INFO) << "solver: " << m_solverType << " Init 结束";
 }
 
 void Simulator::Update() {
     static int cnt = 0;
     if (++cnt > 301) return;
     cout << "step frame " << cnt << endl;
-    m_solver->Step();
+
+    switch (m_solverType) {
+        case PD:
+            m_solver->Step();
+            break;
+        case PD_MG:
+            m_solver_mg->Step();
+            break;
+    }
 }
