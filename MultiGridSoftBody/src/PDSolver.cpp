@@ -110,12 +110,14 @@ void PDSolver::Init() {
     m_gravityY = -9.8f;
     m_gravityZ = 0.0f;
 
-    m_tetNum = g_simulator->m_tetIdx.size() / 4;
-    m_tetVertNum = g_simulator->m_tetVertPos.size() / 3;
-    m_tetIndex = g_simulator->m_tetIdx;
-    m_tetVertPos = g_simulator->m_tetVertPos;
+    m_tetIndex = g_simulator->m_softObject->m_tetIdxORIG;
+    m_tetNum = m_tetIndex.size() / 4;
+    m_tetVertPos = g_simulator->m_softObject->m_tetVertPosORIG;
+    m_tetVertNum = m_tetVertPos.size() / 3;
+
     InitVolumeConstraint();
     LOG(INFO) << "InitVolumeConstraint ½áÊø";
+
     SetFixedVert();
     runInitialize(m_tetNum, m_tetVertNum, m_tetIndex.data(), m_tetInvD3x3.data(), m_tetInvD3x4.data(), m_tetVolume.data(), m_tetVolumeDiag.data(),
                   m_tetVertMass.data(), m_tetVertFixed.data(), m_tetVertPos.data());

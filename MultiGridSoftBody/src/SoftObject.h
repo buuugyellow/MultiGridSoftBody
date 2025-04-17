@@ -12,16 +12,20 @@ public:
     int m_renderObjId;
 
     // 原始 obj 文件读入的数据
-    vector<float> m_triVertPos; // 顶点坐标
-    vector<float> m_triUV; // 纹理坐标
-    vector<int> m_triIdx; // 三角形顶点索引
-    vector<int> m_triUVIdx; // 三角形 UV 索引
+    vector<float> m_triVertPos;  // 顶点坐标
+    vector<float> m_triUV;       // 纹理坐标
+    vector<int> m_triIdx;        // 三角形顶点索引
+    vector<int> m_triUVIdx;      // 三角形 UV 索引
 
     // 原始 msh 文件读入的数据
-    vector<float> m_tetVertPosORIG; // 四面体顶点坐标
-    vector<int> m_tetIdxORIG; // 四面体顶点索引
+    vector<float> m_tetVertPosORIG;  // 四面体顶点坐标
+    vector<int> m_tetIdxORIG;        // 四面体顶点索引
 
-    SoftObject(string name, string objFile, string tetFile) : m_name(name), m_objFile(objFile), m_tetFile(tetFile), m_renderObjId(-1){};
+    // 处理原始数据得到的数据
+    vector<unsigned int> m_tetFaceIdx;  // 表面的三角形索引
+
+    SoftObject(string name, string objFile, string tetFile) : m_name(name), m_objFile(objFile), m_tetFile(tetFile), m_renderObjId(-1) {};
 
     void ReadFromFile();
+    void TetFaceExtraction();
 };
