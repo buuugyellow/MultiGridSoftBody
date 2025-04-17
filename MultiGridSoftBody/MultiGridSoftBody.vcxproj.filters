@@ -27,9 +27,6 @@
     <ClCompile Include="src\SoftObject.cpp">
       <Filter>模型</Filter>
     </ClCompile>
-    <ClCompile Include="src\Solver.cpp">
-      <Filter>解算器</Filter>
-    </ClCompile>
     <ClCompile Include="src\Simulator.cpp">
       <Filter>全局类</Filter>
     </ClCompile>
@@ -73,9 +70,6 @@
     </ClInclude>
     <ClInclude Include="src\SoftObject.h">
       <Filter>模型</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Solver.h">
-      <Filter>解算器</Filter>
     </ClInclude>
     <ClInclude Include="src\Simulator.h">
       <Filter>全局类</Filter>

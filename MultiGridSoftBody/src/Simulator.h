@@ -1,8 +1,8 @@
 #pragma once
-#include <vector>
-
+#include "PDSolver.h"
 #include "SoftObject.h"
-#include "Solver.h"
+
+#include <vector>
 
 // 懒汉式全局单例，包括模型和解算器
 using namespace std;
@@ -10,7 +10,7 @@ class Simulator {
 public:
     SoftObject* m_softObject;
     SoftObject* m_softObject_coarse;
-    Solver* m_solver;
+    PDSolver* m_solver;
 
     vector<float> m_tetVertPos;         // 这里需要复制一份顶点数据是用于与解算器解耦
     vector<int> m_tetIdx;               // 同上
@@ -22,8 +22,8 @@ public:
     void Update();                    // 更新
 
 private:
-    Simulator();
-    ~Simulator();
+    Simulator() = default;
+    ~Simulator() = default;
     Simulator(const Simulator&) = delete;             // 禁止拷贝构造
     Simulator& operator=(const Simulator&) = delete;  // 禁止赋值操作
 };

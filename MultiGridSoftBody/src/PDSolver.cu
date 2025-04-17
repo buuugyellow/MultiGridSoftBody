@@ -8,27 +8,8 @@
 #include "cudaUtils.h"
 #include "global.h"
 
-int tetNum;              // 四面体数量
-int tetVertNum;          // 四面体顶点数量
-float* tetVertPos_d;     // 当前位置，tetVertNum*3
-int* tetIndex_d;         // 四面体索引
-float* tetInvD3x3_d;     // 逆矩阵, tetNum*9
-float* tetInvD3x4_d;     // Ac阵， tetNum*12
-float* tetVolume_d;      // 四面体体积，tetNum
-float* tetVolumeDiag_d;  // 四面体顶点形变梯度，tetVertNum_d
-float* tetVertMass_d;    // 质量，tetVertNum_d*3
-float* tetVertFixed_d;   // 四面体顶点是否固定，0.0f表示没有固定，tetVertNum
-
-float* tetVertPos_last_d;     // 上一时刻位置，tetVertNum*3
-float* tetVertPos_old_d;      // st，tetVertNum*3
-float* tetVertPos_prev_d;     // 上一次迭代，tetVertNum*3
-float* tetVertPos_next_d;     // 下一步位置，tetVertNum*3
-float* tetVertVelocity_d;     // 速度，tetVertNum*3
-float* tetVertExternForce_d;  // 外力，tetVertNum*3
-float* tetVertForce_d;        // 顶点受力, tetVertNum*3
-
-void runInitialize(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
-                   float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h) {
+void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
+                        float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h) {
     tetNum = tetNum_h;
     tetVertNum = tetVertNum_h;
     cudaMalloc((void**)&tetVertPos_d, tetVertNum * 3 * sizeof(float));
@@ -107,7 +88,7 @@ __global__ void calculateST(float* positions, float* velocity, float* externForc
     externForce[indexZ] = 0.0;
 }
 
-void runCalculateST(float m_damping, float m_dt, float m_gravityX, float m_gravityY, float m_gravityZ) {
+void PDSolverData::runCalculateST(float m_damping, float m_dt, float m_gravityX, float m_gravityY, float m_gravityZ) {
     int threadNum = 512;
     int blockNum = (tetVertNum + threadNum - 1) / threadNum;
     calculateST<<<blockNum, threadNum>>>(tetVertPos_d, tetVertVelocity_d, tetVertExternForce_d, tetVertPos_old_d, tetVertPos_prev_d, tetVertPos_last_d,
@@ -118,7 +99,7 @@ void runCalculateST(float m_damping, float m_dt, float m_gravityX, float m_gravi
 #endif  // PRINT_CUDA_ERROR
 }
 
-void runClearTemp() { cudaMemset(tetVertForce_d, 0.0f, tetVertNum * 3 * sizeof(float)); }
+void PDSolverData::runClearTemp() { cudaMemset(tetVertForce_d, 0.0f, tetVertNum * 3 * sizeof(float)); }
 
 __global__ void calculateIF(float* positions, int* m_tetIndex, float* m_tetInvD3x3, float* m_tetInvD3x4, float* force, float* tetVolumn, int tetNum,
                             float m_volumnStiffness) {
@@ -177,7 +158,7 @@ __global__ void calculateIF(float* positions, int* m_tetIndex, float* m_tetInvD3
     atomicAdd(force + vIndex3 * 3 + 2, temp[11] * tetVolumn[threadid] * m_volumnStiffness);
 }
 
-void runCalculateIF(float m_volumnStiffness) {
+void PDSolverData::runCalculateIF(float m_volumnStiffness) {
     int threadNum = 512;
     int blockNum = (tetNum + threadNum - 1) / threadNum;
     calculateIF<<<blockNum, threadNum>>>(tetVertPos_d, tetIndex_d, tetInvD3x3_d, tetInvD3x4_d, tetVertForce_d, tetVolume_d, tetNum, m_volumnStiffness);
@@ -230,7 +211,7 @@ __global__ void calculatePOS(float* positions, float* force, float* fixed, float
     positions[indexZ] = next_positions[indexZ];
 }
 
-void runcalculatePOS(float omega, float m_dt) {
+void PDSolverData::runcalculatePOS(float omega, float m_dt) {
     int threadNum = 512;
     int blockNum = (tetVertNum + threadNum - 1) / threadNum;
     calculatePOS<<<blockNum, threadNum>>>(tetVertPos_d, tetVertForce_d, tetVertFixed_d, tetVertMass_d, tetVertPos_next_d, tetVertPos_prev_d, tetVertPos_old_d,
@@ -251,7 +232,7 @@ __global__ void calculateV(float* positions, float* velocity, float* last_positi
     velocity[threadid * 3 + 2] = (positions[threadid * 3 + 2] - last_positions[threadid * 3 + 2]) / m_dt;
 }
 
-void runCalculateV(float m_dt) {
+void PDSolverData::runCalculateV(float m_dt) {
     int threadNum = 512;
     int blockNum = (tetVertNum + threadNum - 1) / threadNum;
     calculateV<<<blockNum, threadNum>>>(tetVertPos_d, tetVertVelocity_d, tetVertPos_last_d, tetVertNum, m_dt);
@@ -261,12 +242,14 @@ void runCalculateV(float m_dt) {
 #endif  //  PRINT_CUDA_ERROR
 }
 
-void runCpyTetVertForRender() { cudaMemcpy(g_simulator->m_tetVertPos.data(), tetVertPos_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost); }
+void PDSolverData::runCpyTetVertForRender() {
+    cudaMemcpy(g_simulator->m_tetVertPos.data(), tetVertPos_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
+}
 
 //////////////////////////////////////////// test code ////////////////////////////////////////////
 
 double deltaXFirst = 0;
-void runTestConvergence(int iter) {
+void PDSolverData::runTestConvergence(int iter) {
     vector<float> tetVertPos_prev_h(tetVertNum * 3);
     vector<float> tetVertPos_h(tetVertNum * 3);
     cudaMemcpy(tetVertPos_h.data(), tetVertPos_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
@@ -284,8 +267,8 @@ void runTestConvergence(int iter) {
     printf("iter: %d, deltaX: %f, rate: %f\n", iter, deltaX, deltaXRate);
 }
 
-void runCalEnergy(int iter, float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex, const vector<float>& m_tetInvD3x3,
-                  const vector<float>& m_tetVolume, float m_volumnStiffness) {
+void PDSolverData::runCalEnergy(int iter, float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex, const vector<float>& m_tetInvD3x3,
+                                const vector<float>& m_tetVolume, float m_volumnStiffness) {
     vector<float> tetVertPos_h(tetVertNum * 3);
     vector<float> tetVertPos_old_h(tetVertNum * 3);
     vector<float> tetVertPos_prev_h(tetVertNum * 3);
@@ -350,5 +333,5 @@ void runCalEnergy(int iter, float m_dt, const vector<float>& m_tetVertMass, cons
         Ep += e;
     }
 
-    fprintf(energyOutputFile ,"%d,%f,%f,%f,%f\n", iter, Ek + Ep, Ek, Ep, deltaX);
+    fprintf(energyOutputFile, "%d,%f,%f,%f,%f\n", iter, Ek + Ep, Ek, Ep, deltaX);
 }

@@ -1,11 +1,11 @@
 #pragma once
 #define PRINT_CUDA_ERROR
-#include <string>
 
 #include "Simulator.h"
 #include "application.hpp"
 #include "glog/logging.h"
 
+#include <string>
 using namespace std;
 extern string config_objName;
 extern string config_objName_coarse;

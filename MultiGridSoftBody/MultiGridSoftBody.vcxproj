@@ -32,7 +32,6 @@
     <ClCompile Include="src\Simulator.cpp" />
     <ClCompile Include="src\SoftObject.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\Solver.cpp" />
     <ClCompile Include="src\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -50,7 +49,6 @@
     <ClInclude Include="src\gui.h" />
     <ClInclude Include="src\Simulator.h" />
     <ClInclude Include="src\SoftObject.h" />
-    <ClInclude Include="src\Solver.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\PDSolver.cu">

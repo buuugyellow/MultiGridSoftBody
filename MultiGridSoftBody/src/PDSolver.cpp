@@ -1,23 +1,11 @@
 #include "PDSolver.h"
+#include "global.h"
 
 #include <chrono>
 #include <iostream>
 
-#include "global.h"
 using namespace std;
 double duration_physical = 0;
-
-void runInitialize(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
-                   float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h);
-void runCalculateST(float m_damping, float m_dt, float m_gravityX, float m_gravityY, float m_gravityZ);
-void runClearTemp();
-void runCalculateIF(float m_volumnStiffness);
-void runcalculatePOS(float omega, float m_dt);
-void runCalculateV(float m_dt);
-void runCpyTetVertForRender();
-void runTestConvergence(int iter);
-void runCalEnergy(int iter, float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex, const vector<float>& m_tetInvD3x3,
-                  const vector<float>& m_tetVolume, float m_volumnStiffness);
 
 void PDSolver::InitVolumeConstraint() {
     m_tetVertMass.resize(m_tetVertNum);
@@ -100,7 +88,7 @@ void PDSolver::SetFixedVert() {
     }
 }
 
-void PDSolver::Init() {
+void PDSolver::Init(vector<int>& tetIdx, vector<float> tetVertPos) {
     m_iterNum = 16;
     m_dt = 1.0f / 30.0f;
     m_damping = 0.5f;
@@ -110,33 +98,34 @@ void PDSolver::Init() {
     m_gravityY = -9.8f;
     m_gravityZ = 0.0f;
 
-    m_tetIndex = g_simulator->m_tetIdx;
+    m_tetIndex = tetIdx;
+    m_tetVertPos = tetVertPos;
     m_tetNum = m_tetIndex.size() / 4;
-    m_tetVertPos = g_simulator->m_tetVertPos;
     m_tetVertNum = m_tetVertPos.size() / 3;
 
     InitVolumeConstraint();
     LOG(INFO) << "InitVolumeConstraint 结束";
 
     SetFixedVert();
-    runInitialize(m_tetNum, m_tetVertNum, m_tetIndex.data(), m_tetInvD3x3.data(), m_tetInvD3x4.data(), m_tetVolume.data(), m_tetVolumeDiag.data(),
-                  m_tetVertMass.data(), m_tetVertFixed.data(), m_tetVertPos.data());
+    pdSolverData = new PDSolverData();
+    pdSolverData->Init(m_tetNum, m_tetVertNum, m_tetIndex.data(), m_tetInvD3x3.data(), m_tetInvD3x4.data(), m_tetVolume.data(), m_tetVolumeDiag.data(),
+                       m_tetVertMass.data(), m_tetVertFixed.data(), m_tetVertPos.data());
 }
 
 void PDSolver::Step() {
     auto start = std::chrono::high_resolution_clock::now();
-    runCalculateST(m_damping, m_dt, m_gravityX, m_gravityY, m_gravityZ);
+    pdSolverData->runCalculateST(m_damping, m_dt, m_gravityX, m_gravityY, m_gravityZ);
     float omega = 1.0f;
     for (int i = 0; i < m_iterNum; i++) {
-        runCalEnergy(i, m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness);  // 计算能量，测 fps 时需要注释
+        pdSolverData->runCalEnergy(i, m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness);  // 计算能量，测 fps 时需要注释
 
-        runClearTemp();
-        runCalculateIF(m_volumnStiffness);
+        pdSolverData->runClearTemp();
+        pdSolverData->runCalculateIF(m_volumnStiffness);
         omega = 4 / (4 - m_rho * m_rho * omega);
-        runcalculatePOS(omega, m_dt);
+        pdSolverData->runcalculatePOS(omega, m_dt);
     }
-    runCalculateV(m_dt);
-    runCpyTetVertForRender();
+    pdSolverData->runCalculateV(m_dt);
+    pdSolverData->runCpyTetVertForRender();
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);

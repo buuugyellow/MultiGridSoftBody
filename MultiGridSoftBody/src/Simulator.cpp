@@ -1,6 +1,6 @@
 #pragma once
-#include "global.h"
 #include "PDSolver.h"
+#include "global.h"
 
 #include <iostream>
 #include <set>
@@ -12,10 +12,6 @@ Simulator& Simulator::GetInstance() {
     static Simulator instance;
     return instance;
 }
-
-Simulator::Simulator() {}
-
-Simulator::~Simulator() {}
 
 void Simulator::Init() {
     // 模型初始化
@@ -38,8 +34,6 @@ void Simulator::Init() {
     m_softObject_coarse->TetFaceExtraction();
     LOG(INFO) << "coarse TetFaceExtraction 结束";
 
-    LOG(INFO) << "objects Init 结束";
-
     // 中间变量初始化
     m_tetVertPos = m_softObject->m_tetVertPosORIG;
     m_tetIdx = m_softObject->m_tetIdxORIG;
@@ -50,14 +44,13 @@ void Simulator::Init() {
         m_normal.push_back(0.0f);
     }
 
-
     // 解算器初始化
     m_solver = new PDSolver();
-    m_solver->Init();
+    m_solver->Init(m_tetIdx, m_tetVertPos);
     LOG(INFO) << "solver Init 结束";
 }
 
-void Simulator::Update() { 
+void Simulator::Update() {
     static int cnt = 0;
     if (++cnt > 301) return;
     cout << "step frame " << cnt << endl;
