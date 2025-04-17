@@ -8,6 +8,7 @@
 
 using namespace std;
 extern string config_objName;
+extern string config_objName_coarse;
 extern string config_dataDir;
 extern FILE* energyOutputFile;
 extern vector<float> g_pointsForRender;  // 仿真线程渲染线程共享的顶点数据，需要传递的包括：顶点坐标 + 法向量 + UV坐标

@@ -23,27 +23,38 @@ void Simulator::Init() {
     string objFile = config_dataDir + name + ".obj";
     string tetFile = config_dataDir + name;
     m_softObject = new SoftObject(name, objFile, tetFile);
-
     m_softObject->ReadFromFile();
     LOG(INFO) << "ReadFromFile 结束";
-
     m_softObject->TetFaceExtraction();
     LOG(INFO) << "TetFaceExtraction 结束";
 
+    // 粗网格初始化
+    string name_coarse = config_objName_coarse;
+    string objFile_coarse = config_dataDir + name_coarse + ".obj";
+    string tetFile_coarse = config_dataDir + name_coarse;
+    m_softObject_coarse = new SoftObject(name_coarse, objFile_coarse, tetFile_coarse);
+    m_softObject_coarse->ReadFromFile();
+    LOG(INFO) << "coarse ReadFromFile 结束";
+    m_softObject_coarse->TetFaceExtraction();
+    LOG(INFO) << "coarse TetFaceExtraction 结束";
+
     LOG(INFO) << "objects Init 结束";
 
-    // 解算器初始化
-    m_solver = new PDSolver();
-    m_solver->Init();
-    LOG(INFO) << "solver Init 结束";
-
+    // 中间变量初始化
     m_tetVertPos = m_softObject->m_tetVertPosORIG;
+    m_tetIdx = m_softObject->m_tetIdxORIG;
     m_tetFaceIdx = m_softObject->m_tetFaceIdx;
     for (int i = 0; i < m_tetVertPos.size() / 3; i++) {
         m_normal.push_back(1.0f);
         m_normal.push_back(0.0f);
         m_normal.push_back(0.0f);
     }
+
+
+    // 解算器初始化
+    m_solver = new PDSolver();
+    m_solver->Init();
+    LOG(INFO) << "solver Init 结束";
 }
 
 void Simulator::Update() { 

@@ -110,9 +110,9 @@ void PDSolver::Init() {
     m_gravityY = -9.8f;
     m_gravityZ = 0.0f;
 
-    m_tetIndex = g_simulator->m_softObject->m_tetIdxORIG;
+    m_tetIndex = g_simulator->m_tetIdx;
     m_tetNum = m_tetIndex.size() / 4;
-    m_tetVertPos = g_simulator->m_softObject->m_tetVertPosORIG;
+    m_tetVertPos = g_simulator->m_tetVertPos;
     m_tetVertNum = m_tetVertPos.size() / 3;
 
     InitVolumeConstraint();
