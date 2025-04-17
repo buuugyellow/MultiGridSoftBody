@@ -29,6 +29,7 @@
     <ClCompile Include="src\global.h" />
     <ClCompile Include="src\gui.cpp" />
     <ClCompile Include="src\PDSolver.cpp" />
+    <ClCompile Include="src\PDSolver_MG.cpp" />
     <ClCompile Include="src\Simulator.cpp" />
     <ClCompile Include="src\SoftObject.cpp" />
     <ClCompile Include="src\main.cpp" />
@@ -47,6 +48,7 @@
     <ClInclude Include="src\cudaUtils.h" />
     <ClInclude Include="src\PDSolver.h" />
     <ClInclude Include="src\gui.h" />
+    <ClInclude Include="src\PDSolver_MG.h" />
     <ClInclude Include="src\Simulator.h" />
     <ClInclude Include="src\SoftObject.h" />
   </ItemGroup>

@@ -63,6 +63,9 @@
     <ClCompile Include="..\3rd\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="src\PDSolver_MG.cpp">
+      <Filter>解算器</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\gui.h">
@@ -106,6 +109,9 @@
     </ClInclude>
     <ClInclude Include="..\3rd\imgui\imstb_truetype.h">
       <Filter>imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PDSolver_MG.h">
+      <Filter>解算器</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
