@@ -1,8 +1,9 @@
 #include "PDSolver.h"
-#include "global.h"
 
 #include <chrono>
 #include <iostream>
+
+#include "global.h"
 
 using namespace std;
 double duration_physical = 0;
@@ -12,6 +13,9 @@ void PDSolver::InitVolumeConstraint() {
     m_tetVolumeDiag.resize(m_tetVertNum);
     m_tetInvD3x3.resize(m_tetNum * 9);
     m_tetInvD3x4.resize(m_tetNum * 12);
+    m_tetCenter.resize(m_tetNum * 3, 0);
+    m_tetFaceArea.resize(m_tetNum * 4, 0);
+    m_tetFaceNormal.resize(m_tetNum * 12, 0);
 
     float volumnSum = 0;
     for (int i = 0; i < m_tetNum; i++) {
@@ -77,6 +81,54 @@ void PDSolver::InitVolumeConstraint() {
         m_tetVolumeDiag[vIndex3] += m_tetInvD3x4[i * 12 + 3] * m_tetInvD3x4[i * 12 + 3] * m_tetVolume[i] * m_volumnStiffness;
         m_tetVolumeDiag[vIndex3] += m_tetInvD3x4[i * 12 + 7] * m_tetInvD3x4[i * 12 + 7] * m_tetVolume[i] * m_volumnStiffness;
         m_tetVolumeDiag[vIndex3] += m_tetInvD3x4[i * 12 + 11] * m_tetInvD3x4[i * 12 + 11] * m_tetVolume[i] * m_volumnStiffness;
+
+
+        // 计算每个四面体的重心坐标
+        vector<int> vertIds = {vIndex0, vIndex1, vIndex2, vIndex3};
+        for (int j = 0; j < 3; j++) {
+            for (int k = 0; k < 4; k++) {
+                m_tetCenter[i * 3 + j] += m_tetVertPos[vertIds[k] * 3 + j];
+            }
+            m_tetCenter[i * 3 + j] /= 4;
+        }
+
+        // 计算每个四面体四个面的属性
+        vector<vector<int>> faces = {{vIndex1, vIndex2, vIndex3}, {vIndex0, vIndex2, vIndex3}, {vIndex0, vIndex1, vIndex3}, {vIndex0, vIndex1, vIndex2}};
+        for (int k = 0; k < 4; k++) {
+            int D_id = m_tetIndex[i * 4 + k];
+            int A_id = faces[k][0];
+            int B_id = faces[k][1];
+            int C_id = faces[k][2];
+            Point3D A(m_tetVertPos.data() + A_id * 3);
+            Point3D B(m_tetVertPos.data() + B_id * 3);
+            Point3D C(m_tetVertPos.data() + C_id * 3);
+            Point3D D(m_tetVertPos.data() + D_id * 3);
+
+            // 计算边向量
+            const Point3D AB = B - A;
+            const Point3D AC = C - A;
+
+            // 计算法向量
+            Point3D normal = crossProduct(AB, AC);
+            const Point3D AD = D - A;
+            if (dotProduct(normal, AD) > 0) {
+                normal.x = -normal.x;
+                normal.y = -normal.y;
+                normal.z = -normal.z;
+            }
+
+            // 计算面积
+            double len = vectorLength(normal);
+            m_tetFaceArea[i * 4 + k] = 0.5 * len;
+            assert(fabs(len) > 1e-5);
+
+            // 计算归一化的法向量
+            normal = normal / len;
+            m_tetFaceNormal[i * 12 + k * 3 + 0] = normal.x;
+            m_tetFaceNormal[i * 12 + k * 3 + 1] = normal.y;
+            m_tetFaceNormal[i * 12 + k * 3 + 2] = normal.z;
+        }
+
     }
 }
 
@@ -88,7 +140,7 @@ void PDSolver::SetFixedVert() {
     }
 }
 
-void PDSolver::Init(vector<int>& tetIdx, vector<float> tetVertPos) {
+void PDSolver::Init(const vector<int>& tetIdx, const vector<float> tetVertPos) {
     m_iterNum = 16;
     m_dt = 1.0f / 30.0f;
     m_damping = 0.5f;
@@ -110,6 +162,7 @@ void PDSolver::Init(vector<int>& tetIdx, vector<float> tetVertPos) {
     pdSolverData = new PDSolverData();
     pdSolverData->Init(m_tetNum, m_tetVertNum, m_tetIndex.data(), m_tetInvD3x3.data(), m_tetInvD3x4.data(), m_tetVolume.data(), m_tetVolumeDiag.data(),
                        m_tetVertMass.data(), m_tetVertFixed.data(), m_tetVertPos.data());
+    LOG(INFO) << "pdSolverData Init 结束";
 }
 
 void PDSolver::Step() {

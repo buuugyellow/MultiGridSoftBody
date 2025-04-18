@@ -44,6 +44,7 @@ void Simulator::Init() {
         m_normal.push_back(0.0f);
     }
 
+    m_solverType = PD_MG;
     // Ω‚À„∆˜≥ı ºªØ
     switch (m_solverType) {
         case PD:

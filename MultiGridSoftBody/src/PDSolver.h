@@ -56,10 +56,12 @@ public:
     vector<float> m_tetVertMass;
     vector<float> m_tetVertFixed;
     vector<float> m_tetVertPos;
-
+    vector<float> m_tetFaceNormal;  // 这个是每个四面体的四个面的法向量，面的顺序和 m_tetIndex 中对应点的顺序一致
+    vector<float> m_tetFaceArea;    // 每个四面体的四个面的面积，顺序同上
+    vector<float> m_tetCenter;      // 四面体重心坐标
     PDSolverData* pdSolverData;
 
-    void Init(vector<int>& tetIdx, vector<float> tetVertPos);
+    void Init(const vector<int>& tetIdx, const vector<float> tetVertPos);
     void Step();
     void InitVolumeConstraint();
     void SetFixedVert();
