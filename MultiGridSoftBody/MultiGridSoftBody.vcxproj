@@ -53,6 +53,7 @@
     <ClInclude Include="src\SoftObject.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="src\cudaUtils.cu" />
     <CudaCompile Include="src\PDSolver.cu">
       <FileType>Document</FileType>
     </CudaCompile>
@@ -93,7 +94,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.1.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.4.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -152,6 +153,9 @@
       <AdditionalLibraryDirectories>..\3rd\glfw\lib-vc2022;..\3rd\assimp\lib;..\3rd\glog\lib;..\x64\Debug;$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>glfw3dll.lib;assimp-vc143-mt.lib;Render.lib;glogd.lib;cublas.lib;cuda.lib;cudadevrt.lib;cudart.lib;cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <CudaCompile>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+    </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -171,9 +175,12 @@
       <AdditionalLibraryDirectories>..\3rd\glfw\lib-vc2022;..\3rd\assimp\lib;..\3rd\glog\lib;..\x64\Debug;$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>glfw3dll.lib;assimp-vc143-mt.lib;Render.lib;glogd.lib;cuda.lib;cudadevrt.lib;cudart.lib;cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <CudaCompile>
+      <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+    </CudaCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.1.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.4.targets" />
   </ImportGroup>
 </Project>

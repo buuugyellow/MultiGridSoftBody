@@ -4,6 +4,7 @@
 #include "Simulator.h"
 #include "application.hpp"
 #include "glog/logging.h"
+#include "cudaUtils.h"
 
 #include <string>
 using namespace std;

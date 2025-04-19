@@ -7,7 +7,10 @@ public:
     PDSolver* m_pdSolverFine; // 细网格解算器
     vector<int> m_interpolationIds; // 细四面体顶点绑定的粗四面体，4 个粗四面体索引
     vector<float> m_interpolationWights; // 权重
+    int* interpolationIds_d;
+    float* interpolationWights_d;
 
     void Init(const vector<int>& tetIdxCoarse, const vector<float> tetVertPosCoarse, const vector<int>& tetIdxFine, const vector<float> tetVertPosFine);
     void Step();
+    void runInterpolate();
 };

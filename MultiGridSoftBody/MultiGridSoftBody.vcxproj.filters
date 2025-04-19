@@ -118,5 +118,8 @@
     <CudaCompile Include="src\PDSolver.cu">
       <Filter>解算器</Filter>
     </CudaCompile>
+    <CudaCompile Include="src\cudaUtils.cu">
+      <Filter>工具</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

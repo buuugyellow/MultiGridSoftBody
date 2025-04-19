@@ -1,4 +1,5 @@
 #include "PDSolver_MG.h"
+
 #include "global.h"
 
 void PDSolver_MG::Init(const vector<int>& tetIdxCoarse, const vector<float> tetVertPosCoarse, const vector<int>& tetIdxFine,
@@ -19,8 +20,8 @@ void PDSolver_MG::Init(const vector<int>& tetIdxCoarse, const vector<float> tetV
     const vector<float>& tetFaceAreaCoarse = m_pdSolverCoarse->m_tetFaceArea;
 
     int tetVertNumFine = m_pdSolverFine->m_tetVertNum;
-    
-    float maxDistance = 0; // 细四面体顶点和粗四面体重心之间的距离最大值，用于验证
+
+    float maxDistance = 0;  // 细四面体顶点和粗四面体重心之间的距离最大值，用于验证
     for (int vIdFine = 0; vIdFine < tetVertNumFine; ++vIdFine) {
         for (int tIdCoarse = 0; tIdCoarse < tetNumCoarse; ++tIdCoarse) {
             vector<float> tetVertPosInATet;
@@ -45,20 +46,70 @@ void PDSolver_MG::Init(const vector<int>& tetIdxCoarse, const vector<float> tetV
                 // test
                 for (int ii = 0; ii < 4; ii++) {
                     float l = lambdas[ii];
-                    assert(l>-1e-5 && l < 1 + 1e-5);
+                    assert(l > -1e-5 && l < 1 + 1e-5);
                 }
                 Point3D p = {tetVertPosFine[vIdFine * 3 + 0], tetVertPosFine[vIdFine * 3 + 1], tetVertPosFine[vIdFine * 3 + 2]};
                 Point3D center = {tetCenterCoarse[tIdCoarse * 3 + 0], tetCenterCoarse[tIdCoarse * 3 + 1], tetCenterCoarse[tIdCoarse * 3 + 2]};
                 Point3D centerP = p - center;
                 float dis = vectorLength(centerP);
                 maxDistance = max(maxDistance, dis);
-                break; // 不用继续遍历其他的四面体
+                break;  // 不用继续遍历其他的四面体
             }
         }
     }
+
+    // 分配 cuda 数组
+    cudaMalloc((void**)&interpolationIds_d, tetVertNumFine * 4 * sizeof(int));
+    cudaMemcpy(interpolationIds_d, m_interpolationIds.data(), tetVertNumFine * 4 * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&interpolationWights_d, tetVertNumFine * 4 * sizeof(float));
+    cudaMemcpy(interpolationWights_d, m_interpolationWights.data(), tetVertNumFine * 4 * sizeof(float), cudaMemcpyHostToDevice);
+
     LOG(INFO) << "绑定的细四面体顶点与粗四面体重心之间的最大距离 = " << maxDistance;
 }
 
 void PDSolver_MG::Step() {
+    auto start = std::chrono::high_resolution_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
 
+    // 1. 粗网格迭代到收敛
+    m_pdSolverCoarse->pdSolverData->runCalculateST(m_pdSolverCoarse->m_damping, m_pdSolverCoarse->m_dt, m_pdSolverCoarse->m_gravityX,
+                                                   m_pdSolverCoarse->m_gravityY, m_pdSolverCoarse->m_gravityZ);
+    float omega = 1.0f;
+    for (int i = 0; i < 8; i++) {
+        m_pdSolverCoarse->pdSolverData->runCalEnergy(i, m_pdSolverCoarse->m_dt, m_pdSolverCoarse->m_tetVertMass, m_pdSolverCoarse->m_tetIndex,
+                                                     m_pdSolverCoarse->m_tetInvD3x3, m_pdSolverCoarse->m_tetVolume,
+                                                     m_pdSolverCoarse->m_volumnStiffness);  // 计算能量，测 fps 时需要注释
+
+        m_pdSolverCoarse->pdSolverData->runClearTemp();
+        m_pdSolverCoarse->pdSolverData->runCalculateIF(m_pdSolverCoarse->m_volumnStiffness);
+        omega = 4 / (4 - m_pdSolverCoarse->m_rho * m_pdSolverCoarse->m_rho * omega);
+        m_pdSolverCoarse->pdSolverData->runcalculatePOS(omega, m_pdSolverCoarse->m_dt);
+    }
+    m_pdSolverCoarse->pdSolverData->runCalculateV(m_pdSolverCoarse->m_dt);
+
+    m_pdSolverFine->pdSolverData->runCalculateST(m_pdSolverFine->m_damping, m_pdSolverFine->m_dt, m_pdSolverFine->m_gravityX, m_pdSolverFine->m_gravityY,
+                                                 m_pdSolverFine->m_gravityZ);
+    m_pdSolverFine->pdSolverData->runCalEnergy(-1, m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex,
+                                               m_pdSolverFine->m_tetInvD3x3, m_pdSolverFine->m_tetVolume,
+                                               m_pdSolverFine->m_volumnStiffness);  // 计算能量，测 fps 时需要注释
+    // 2. 插值到细网格
+    runInterpolate();
+
+    // 3. 细网格迭代到收敛
+    omega = 1.0f;
+    for (int i = 0; i < 24; i++) {
+        m_pdSolverFine->pdSolverData->runCalEnergy(i, m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex,
+                                                   m_pdSolverFine->m_tetInvD3x3, m_pdSolverFine->m_tetVolume,
+                                                   m_pdSolverFine->m_volumnStiffness);  // 计算能量，测 fps 时需要注释
+
+        m_pdSolverFine->pdSolverData->runClearTemp();
+        m_pdSolverFine->pdSolverData->runCalculateIF(m_pdSolverFine->m_volumnStiffness);
+        omega = 4 / (4 - m_pdSolverFine->m_rho * m_pdSolverFine->m_rho * omega);
+        m_pdSolverFine->pdSolverData->runcalculatePOS(omega, m_pdSolverFine->m_dt);
+    }
+    m_pdSolverFine->pdSolverData->runCalculateV(m_pdSolverFine->m_dt);
+    m_pdSolverFine->pdSolverData->runCpyTetVertForRender();
+
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    duration_physical = duration.count();
 }

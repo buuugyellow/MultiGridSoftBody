@@ -1,11 +1,8 @@
-#include <cuda.h>
-#include <cuda_runtime.h>
 #include <math.h>
 #include <stdio.h>
 
 #include <memory>
 
-#include "cudaUtils.h"
 #include "global.h"
 
 void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
@@ -244,6 +241,42 @@ void PDSolverData::runCalculateV(float m_dt) {
 
 void PDSolverData::runCpyTetVertForRender() {
     cudaMemcpy(g_simulator->m_tetVertPos.data(), tetVertPos_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
+}
+
+__global__ void interpolate(int tetVertNumFine, float* tetVertPosFine, float* tetVertPosPrevFine, float* tetVertPosCoarse, int* interpolationIds,
+                            float* interpolationWights) {
+    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (threadid >= tetVertNumFine) return;
+
+    int id0 = interpolationIds[threadid * 4 + 0];
+    int id1 = interpolationIds[threadid * 4 + 1];
+    int id2 = interpolationIds[threadid * 4 + 2];
+    int id3 = interpolationIds[threadid * 4 + 3];
+    float w0 = interpolationWights[threadid * 4 + 0];
+    float w1 = interpolationWights[threadid * 4 + 1];
+    float w2 = interpolationWights[threadid * 4 + 2];
+    float w3 = interpolationWights[threadid * 4 + 3];
+    float tVPosCoarse0[3] = {tetVertPosCoarse[id0 * 3 + 0], tetVertPosCoarse[id0 * 3 + 1], tetVertPosCoarse[id0 * 3 + 2]};
+    float tVPosCoarse1[3] = {tetVertPosCoarse[id1 * 3 + 0], tetVertPosCoarse[id1 * 3 + 1], tetVertPosCoarse[id1 * 3 + 2]};
+    float tVPosCoarse2[3] = {tetVertPosCoarse[id2 * 3 + 0], tetVertPosCoarse[id2 * 3 + 1], tetVertPosCoarse[id2 * 3 + 2]};
+    float tVPosCoarse3[3] = {tetVertPosCoarse[id3 * 3 + 0], tetVertPosCoarse[id3 * 3 + 1], tetVertPosCoarse[id3 * 3 + 2]};
+
+    for (int i = 0; i < 3; i++) {
+        tetVertPosPrevFine[threadid * 3 + i] = tetVertPosFine[threadid * 3 + i] =
+            w0 * tVPosCoarse0[i] + w1 * tVPosCoarse1[i] + w2 * tVPosCoarse2[i] + w3 * tVPosCoarse3[i];
+    }
+}
+
+void PDSolver_MG::runInterpolate() {
+    int threadNum = 512;
+    int blockNum = (m_pdSolverFine->m_tetVertNum + threadNum - 1) / threadNum;
+    interpolate<<<blockNum, threadNum>>>(m_pdSolverFine->m_tetVertNum, m_pdSolverFine->pdSolverData->tetVertPos_d,
+                                         m_pdSolverFine->pdSolverData->tetVertPos_prev_d, m_pdSolverCoarse->pdSolverData->tetVertPos_d, interpolationIds_d,
+                                         interpolationWights_d);
+#ifdef PRINT_CUDA_ERROR
+    cudaDeviceSynchronize();
+    printCudaError("runInterpolate");
+#endif  //  PRINT_CUDA_ERROR
 }
 
 //////////////////////////////////////////// test code ////////////////////////////////////////////
