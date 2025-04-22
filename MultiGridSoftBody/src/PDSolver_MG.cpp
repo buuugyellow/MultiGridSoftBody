@@ -23,6 +23,7 @@ void PDSolver_MG::Init(const vector<int>& tetIdxCoarse, const vector<float> tetV
 
     float maxDistance = 0;  // 细四面体顶点和粗四面体重心之间的距离最大值，用于验证
     for (int vIdFine = 0; vIdFine < tetVertNumFine; ++vIdFine) {
+        bool found = false;
         for (int tIdCoarse = 0; tIdCoarse < tetNumCoarse; ++tIdCoarse) {
             vector<float> tetVertPosInATet;
             vector<int> tetVertIdInATet = {tetIdxCoarse[tIdCoarse * 4 + 0], tetIdxCoarse[tIdCoarse * 4 + 1], tetIdxCoarse[tIdCoarse * 4 + 2],
@@ -53,9 +54,11 @@ void PDSolver_MG::Init(const vector<int>& tetIdxCoarse, const vector<float> tetV
                 Point3D centerP = p - center;
                 float dis = vectorLength(centerP);
                 maxDistance = max(maxDistance, dis);
+                found = true;
                 break;  // 不用继续遍历其他的四面体
             }
         }
+        assert(found == true);
     }
 
     // 分配 cuda 数组
@@ -69,13 +72,12 @@ void PDSolver_MG::Init(const vector<int>& tetIdxCoarse, const vector<float> tetV
 
 void PDSolver_MG::Step() {
     auto start = std::chrono::high_resolution_clock::now();
-    auto end = std::chrono::high_resolution_clock::now();
 
     // 1. 粗网格迭代到收敛
     m_pdSolverCoarse->pdSolverData->runCalculateST(m_pdSolverCoarse->m_damping, m_pdSolverCoarse->m_dt, m_pdSolverCoarse->m_gravityX,
                                                    m_pdSolverCoarse->m_gravityY, m_pdSolverCoarse->m_gravityZ);
     float omega = 1.0f;
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 16; i++) {
         m_pdSolverCoarse->pdSolverData->runCalEnergy(i, m_pdSolverCoarse->m_dt, m_pdSolverCoarse->m_tetVertMass, m_pdSolverCoarse->m_tetIndex,
                                                      m_pdSolverCoarse->m_tetInvD3x3, m_pdSolverCoarse->m_tetVolume,
                                                      m_pdSolverCoarse->m_volumnStiffness);  // 计算能量，测 fps 时需要注释
@@ -97,7 +99,7 @@ void PDSolver_MG::Step() {
 
     // 3. 细网格迭代到收敛
     omega = 1.0f;
-    for (int i = 0; i < 24; i++) {
+    for (int i = 0; i < 16; i++) {
         m_pdSolverFine->pdSolverData->runCalEnergy(i, m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex,
                                                    m_pdSolverFine->m_tetInvD3x3, m_pdSolverFine->m_tetVolume,
                                                    m_pdSolverFine->m_volumnStiffness);  // 计算能量，测 fps 时需要注释
@@ -110,6 +112,7 @@ void PDSolver_MG::Step() {
     m_pdSolverFine->pdSolverData->runCalculateV(m_pdSolverFine->m_dt);
     m_pdSolverFine->pdSolverData->runCpyTetVertForRender();
 
+    auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     duration_physical = duration.count();
 }

@@ -337,17 +337,22 @@ void PDSolverData::runCalEnergy(int iter, float m_dt, const vector<float>& m_tet
         int vIndex2 = m_tetIndex[i * 4 + 2];
         int vIndex3 = m_tetIndex[i * 4 + 3];
 
+        float vert0[3] = {tetVertPos_h[vIndex0 * 3 + 0], tetVertPos_h[vIndex0 * 3 + 1], tetVertPos_h[vIndex0 * 3 + 2]};
+        float vert1[3] = {tetVertPos_h[vIndex1 * 3 + 0], tetVertPos_h[vIndex1 * 3 + 1], tetVertPos_h[vIndex1 * 3 + 2]};
+        float vert2[3] = {tetVertPos_h[vIndex2 * 3 + 0], tetVertPos_h[vIndex2 * 3 + 1], tetVertPos_h[vIndex2 * 3 + 2]};
+        float vert3[3] = {tetVertPos_h[vIndex3 * 3 + 0], tetVertPos_h[vIndex3 * 3 + 1], tetVertPos_h[vIndex3 * 3 + 2]};
+
         // 先计算shape矩阵
         float D[9];
-        D[0] = tetVertPos_h[vIndex1 * 3 + 0] - tetVertPos_h[vIndex0 * 3 + 0];
-        D[1] = tetVertPos_h[vIndex2 * 3 + 0] - tetVertPos_h[vIndex0 * 3 + 0];
-        D[2] = tetVertPos_h[vIndex3 * 3 + 0] - tetVertPos_h[vIndex0 * 3 + 0];
-        D[3] = tetVertPos_h[vIndex1 * 3 + 1] - tetVertPos_h[vIndex0 * 3 + 1];
-        D[4] = tetVertPos_h[vIndex2 * 3 + 1] - tetVertPos_h[vIndex0 * 3 + 1];
-        D[5] = tetVertPos_h[vIndex3 * 3 + 1] - tetVertPos_h[vIndex0 * 3 + 1];
-        D[6] = tetVertPos_h[vIndex1 * 3 + 2] - tetVertPos_h[vIndex0 * 3 + 2];
-        D[7] = tetVertPos_h[vIndex2 * 3 + 2] - tetVertPos_h[vIndex0 * 3 + 2];
-        D[8] = tetVertPos_h[vIndex3 * 3 + 2] - tetVertPos_h[vIndex0 * 3 + 2];
+        D[0] = vert1[0] - vert0[0];
+        D[1] = vert2[0] - vert0[0];
+        D[2] = vert3[0] - vert0[0];
+        D[3] = vert1[1] - vert0[1];
+        D[4] = vert2[1] - vert0[1];
+        D[5] = vert3[1] - vert0[1];
+        D[6] = vert1[2] - vert0[2];
+        D[7] = vert2[2] - vert0[2];
+        D[8] = vert3[2] - vert0[2];
 
         // 计算形变梯度F
         float F[9];

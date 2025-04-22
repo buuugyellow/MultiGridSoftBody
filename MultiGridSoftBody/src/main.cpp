@@ -105,7 +105,7 @@ void renderLoop() {
 void init() {
     config_dataDir = "../data/";
     config_objName = "cube120_12_12";  // 单一物体
-    config_objName_coarse = "cube20_2_2";
+    config_objName_coarse = "cube40_4_4";
     FLAGS_log_dir = "../temp/log/";
     config_energyOutputCsv = "../temp/energy.csv";
     FLAGS_logtostderr = true;
