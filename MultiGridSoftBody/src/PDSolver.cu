@@ -267,15 +267,49 @@ __global__ void interpolate(int tetVertNumFine, float* tetVertPosFine, float* te
     }
 }
 
+__global__ void updatePointInTet(int vertNum, float* vertPos, float* vertPosPrev, float* tetVertPos, int* mapIds, float* mapWights) {
+    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (threadid >= vertNum) return;
+
+    int id0 = mapIds[threadid * 4 + 0];
+    int id1 = mapIds[threadid * 4 + 1];
+    int id2 = mapIds[threadid * 4 + 2];
+    int id3 = mapIds[threadid * 4 + 3];
+    float w0 = mapWights[threadid * 4 + 0];
+    float w1 = mapWights[threadid * 4 + 1];
+    float w2 = mapWights[threadid * 4 + 2];
+    float w3 = mapWights[threadid * 4 + 3];
+    float tVPosCoarse0[3] = {tetVertPos[id0 * 3 + 0], tetVertPos[id0 * 3 + 1], tetVertPos[id0 * 3 + 2]};
+    float tVPosCoarse1[3] = {tetVertPos[id1 * 3 + 0], tetVertPos[id1 * 3 + 1], tetVertPos[id1 * 3 + 2]};
+    float tVPosCoarse2[3] = {tetVertPos[id2 * 3 + 0], tetVertPos[id2 * 3 + 1], tetVertPos[id2 * 3 + 2]};
+    float tVPosCoarse3[3] = {tetVertPos[id3 * 3 + 0], tetVertPos[id3 * 3 + 1], tetVertPos[id3 * 3 + 2]};
+
+    for (int i = 0; i < 3; i++) {
+        vertPosPrev[threadid * 3 + i] = vertPos[threadid * 3 + i] = w0 * tVPosCoarse0[i] + w1 * tVPosCoarse1[i] + w2 * tVPosCoarse2[i] + w3 * tVPosCoarse3[i];
+    }
+}
+
 void PDSolver_MG::runInterpolate() {
     int threadNum = 512;
     int blockNum = (m_pdSolverFine->m_tetVertNum + threadNum - 1) / threadNum;
-    interpolate<<<blockNum, threadNum>>>(m_pdSolverFine->m_tetVertNum, m_pdSolverFine->pdSolverData->tetVertPos_d,
+    updatePointInTet<<<blockNum, threadNum>>>(m_pdSolverFine->m_tetVertNum, m_pdSolverFine->pdSolverData->tetVertPos_d,
                                          m_pdSolverFine->pdSolverData->tetVertPos_prev_d, m_pdSolverCoarse->pdSolverData->tetVertPos_d, interpolationIds_d,
                                          interpolationWights_d);
 #ifdef PRINT_CUDA_ERROR
     cudaDeviceSynchronize();
     printCudaError("runInterpolate");
+#endif  //  PRINT_CUDA_ERROR
+}
+
+void PDSolver_MG::runAverage() {
+    int threadNum = 512;
+    int blockNum = (m_pdSolverCoarse->m_tetVertNum + threadNum - 1) / threadNum;
+    updatePointInTet<<<blockNum, threadNum>>>(m_pdSolverCoarse->m_tetVertNum, m_pdSolverCoarse->pdSolverData->tetVertPos_d,
+                                              m_pdSolverCoarse->pdSolverData->tetVertPos_prev_d, m_pdSolverFine->pdSolverData->tetVertPos_d, averageIds_d,
+                                              averageWeights_d);
+#ifdef PRINT_CUDA_ERROR
+    cudaDeviceSynchronize();
+    printCudaError("runAverage");
 #endif  //  PRINT_CUDA_ERROR
 }
 
