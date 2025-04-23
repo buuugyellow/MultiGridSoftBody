@@ -63,6 +63,10 @@ __device__ __host__ void GetRotation_D(float F[3][3], float R[3][3]) {
     R[2][1] = 0;
     R[2][2] = 1;
     // ºÏ≤È£¨±‹√‚invert
+    if (det <= 0) {
+        printf("det <= 0\n");
+        exit(-1);
+    }
     if (det <= 0) return;
 
     float I_c = C[0][0] + C[1][1] + C[2][2];
@@ -92,7 +96,11 @@ __device__ __host__ void GetRotation_D(float F[3][3], float R[3][3]) {
 
         if (det < 0) III_u = -III_u;
 
-        if (isnan(III_u)) III_u = 1.f;
+        if (isnan(III_u)) {
+            printf("isnan(III_u)\n");
+            exit(-1);
+        }
+        //if (isnan(III_u)) III_u = 1.f;
 
         float I_u = lambda + sqrt(-lambda2 + I_c + 2 * III_u / (lambda + 0.0001f));
         float II_u = (I_u * I_u - I_c) * 0.5;
@@ -102,7 +110,11 @@ __device__ __host__ void GetRotation_D(float F[3][3], float R[3][3]) {
 
         inv_rate = 1 / (I_u * II_u - III_u);
 
-        if (isnan(inv_rate)) inv_rate = 1.f;
+        if (isnan(inv_rate)) {
+            printf("isnan(inv_rate)\n");
+            exit(-1);
+        }
+        //if (isnan(inv_rate)) inv_rate = 1.f;
 
         factor = I_u * III_u * inv_rate;
 
@@ -116,7 +128,11 @@ __device__ __host__ void GetRotation_D(float F[3][3], float R[3][3]) {
             for (int j = 0; j < 3; j++) U[i][j] += factor * C[i][j] - inv_rate * C2[i][j];
 
         inv_rate = 1 / III_u;
-        if (isnan(inv_rate)) inv_rate = 1.f;
+        if (isnan(inv_rate)) {
+            printf("isnan(inv_rate)\n");
+            exit(-1);
+        }
+        //if (isnan(inv_rate)) inv_rate = 1.f;
         factor = II_u * inv_rate;
         memset(inv_U, 0, sizeof(float) * 9);
         inv_U[0][0] = factor;

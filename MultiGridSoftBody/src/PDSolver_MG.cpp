@@ -163,7 +163,7 @@ void PDSolver_MG::Step() {
     }
 
     // 平均到粗网格
-    //runAverage();
+    runAverage();
 
     m_pdSolverCoarse->pdSolverData->runCalculateV(m_pdSolverCoarse->m_dt);
     m_pdSolverFine->pdSolverData->runCalculateV(m_pdSolverFine->m_dt);
