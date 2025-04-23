@@ -77,7 +77,7 @@ bool pointInTet(const float* tetVertPos, const float* tetFaceNormal, const float
         const Point3D AP = P - A;
         const Point3D normal = {tetFaceNormal[k * 3 + 0], tetFaceNormal[k * 3 + 1], tetFaceNormal[k * 3 + 2]};
         float dot = dotProduct(AP, normal);
-        if (dot > 0) {
+        if (dot > 1e-6) {
             return false;
         }
     }

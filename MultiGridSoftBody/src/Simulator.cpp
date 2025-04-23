@@ -62,7 +62,8 @@ void Simulator::Init() {
 
 void Simulator::Update() {
     static int cnt = 0;
-    if (++cnt > 301) return;
+    if (cnt > 300) return;
+    cnt++;
     cout << "step frame " << cnt << endl;
 
     switch (m_solverType) {
