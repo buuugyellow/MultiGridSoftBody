@@ -20,7 +20,9 @@ string config_dataDir;
 string config_objName;  // 单一物体
 string config_objName_coarse;
 string config_energyOutputCsv;
+string config_energyStepCsv;
 FILE* energyOutputFile;
+FILE* energyStepFile; // 每次 step 结束之后的能量，用于记录收敛状态的能量
 
 Application* g_render;
 Simulator* g_simulator;
@@ -108,6 +110,7 @@ void init() {
     config_objName_coarse = "cube40_4_4";
     FLAGS_log_dir = "../temp/log/";
     config_energyOutputCsv = "../temp/energy.csv";
+    config_energyStepCsv = "../temp/energyConvergence.csv";
     FLAGS_logtostderr = true;
     FLAGS_stderrthreshold = 0;
     google::InitGoogleLogging("MultiGridSoftBody");
@@ -116,6 +119,12 @@ void init() {
         LOG(ERROR) << "打开 csv 文件失败";
     } else {
         fprintf(energyOutputFile, "iter,Energy,Ek,Ep,deltaX\n");
+    }
+    err = fopen_s(&energyStepFile, config_energyStepCsv.c_str(), "w+");
+    if (err) {
+        LOG(ERROR) << "打开 csv 文件失败";
+    } else {
+        fprintf(energyStepFile, "Energy,Ek,Ep\n");
     }
 
     initCuda();

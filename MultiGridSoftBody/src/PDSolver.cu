@@ -293,8 +293,8 @@ void PDSolver_MG::runInterpolate() {
     int threadNum = 512;
     int blockNum = (m_pdSolverFine->m_tetVertNum + threadNum - 1) / threadNum;
     updatePointInTet<<<blockNum, threadNum>>>(m_pdSolverFine->m_tetVertNum, m_pdSolverFine->pdSolverData->tetVertPos_d,
-                                         m_pdSolverFine->pdSolverData->tetVertPos_prev_d, m_pdSolverCoarse->pdSolverData->tetVertPos_d, interpolationIds_d,
-                                         interpolationWights_d);
+                                              m_pdSolverFine->pdSolverData->tetVertPos_prev_d, m_pdSolverCoarse->pdSolverData->tetVertPos_d, interpolationIds_d,
+                                              interpolationWights_d);
 #ifdef PRINT_CUDA_ERROR
     cudaDeviceSynchronize();
     printCudaError("runInterpolate");
@@ -334,8 +334,8 @@ void PDSolverData::runTestConvergence(int iter) {
     printf("iter: %d, deltaX: %f, rate: %f\n", iter, deltaX, deltaXRate);
 }
 
-void PDSolverData::runCalEnergy(int iter, float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex, const vector<float>& m_tetInvD3x3,
-                                const vector<float>& m_tetVolume, float m_volumnStiffness) {
+void PDSolverData::runCalEnergy(bool stepEnd, int iter, float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex,
+                                const vector<float>& m_tetInvD3x3, const vector<float>& m_tetVolume, float m_volumnStiffness) {
     vector<float> tetVertPos_h(tetVertNum * 3);
     vector<float> tetVertPos_old_h(tetVertNum * 3);
     vector<float> tetVertPos_prev_h(tetVertNum * 3);
@@ -406,4 +406,5 @@ void PDSolverData::runCalEnergy(int iter, float m_dt, const vector<float>& m_tet
     }
 
     fprintf(energyOutputFile, "%d,%f,%f,%f,%f\n", iter, Ek + Ep, Ek, Ep, deltaX);
+    // if (stepEnd) fprintf(energyStepFile, "%f,%f,%f\n", Ek + Ep, Ek, Ep);
 }

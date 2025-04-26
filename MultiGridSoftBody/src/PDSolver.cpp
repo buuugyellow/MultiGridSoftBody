@@ -82,7 +82,6 @@ void PDSolver::InitVolumeConstraint() {
         m_tetVolumeDiag[vIndex3] += m_tetInvD3x4[i * 12 + 7] * m_tetInvD3x4[i * 12 + 7] * m_tetVolume[i] * m_volumnStiffness;
         m_tetVolumeDiag[vIndex3] += m_tetInvD3x4[i * 12 + 11] * m_tetInvD3x4[i * 12 + 11] * m_tetVolume[i] * m_volumnStiffness;
 
-
         // 计算每个四面体的重心坐标
         vector<int> vertIds = {vIndex0, vIndex1, vIndex2, vIndex3};
         for (int j = 0; j < 3; j++) {
@@ -128,7 +127,6 @@ void PDSolver::InitVolumeConstraint() {
             m_tetFaceNormal[i * 12 + k * 3 + 1] = normal.y;
             m_tetFaceNormal[i * 12 + k * 3 + 2] = normal.z;
         }
-
     }
 }
 
@@ -141,7 +139,7 @@ void PDSolver::SetFixedVert() {
 }
 
 void PDSolver::Init(const vector<int>& tetIdx, const vector<float> tetVertPos) {
-    m_iterNum = 16;
+    m_iterNum = 128;
     m_dt = 1.0f / 30.0f;
     m_damping = 0.5f;
     m_volumnStiffness = 1000.0f;
@@ -170,7 +168,8 @@ void PDSolver::Step() {
     pdSolverData->runCalculateST(m_damping, m_dt, m_gravityX, m_gravityY, m_gravityZ);
     float omega = 1.0f;
     for (int i = 0; i < m_iterNum; i++) {
-        pdSolverData->runCalEnergy(i, m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness);  // 计算能量，测 fps 时需要注释
+        pdSolverData->runCalEnergy(i == m_iterNum - 1, i, m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume,
+                                   m_volumnStiffness);  // 计算能量，测 fps 时需要注释
 
         pdSolverData->runClearTemp();
         pdSolverData->runCalculateIF(m_volumnStiffness);

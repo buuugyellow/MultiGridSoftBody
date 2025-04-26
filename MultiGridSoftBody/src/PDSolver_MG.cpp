@@ -130,10 +130,9 @@ void PDSolver_MG::Step() {
     m_pdSolverFine->pdSolverData->runCalculateST(m_pdSolverFine->m_damping, m_pdSolverFine->m_dt, m_pdSolverFine->m_gravityX, m_pdSolverFine->m_gravityY,
                                                  m_pdSolverFine->m_gravityZ);
 
-
     float omega = 1.0f;
     for (int i = 0; i < 16; i++) {
-        m_pdSolverCoarse->pdSolverData->runCalEnergy(i, m_pdSolverCoarse->m_dt, m_pdSolverCoarse->m_tetVertMass, m_pdSolverCoarse->m_tetIndex,
+        m_pdSolverCoarse->pdSolverData->runCalEnergy(false, i, m_pdSolverCoarse->m_dt, m_pdSolverCoarse->m_tetVertMass, m_pdSolverCoarse->m_tetIndex,
                                                      m_pdSolverCoarse->m_tetInvD3x3, m_pdSolverCoarse->m_tetVolume,
                                                      m_pdSolverCoarse->m_volumnStiffness);  // 计算能量，测 fps 时需要注释
 
@@ -142,8 +141,8 @@ void PDSolver_MG::Step() {
         omega = 4 / (4 - m_pdSolverCoarse->m_rho * m_pdSolverCoarse->m_rho * omega);
         m_pdSolverCoarse->pdSolverData->runcalculatePOS(omega, m_pdSolverCoarse->m_dt);
     }
-    
-    m_pdSolverFine->pdSolverData->runCalEnergy(-1, m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex,
+
+    m_pdSolverFine->pdSolverData->runCalEnergy(false, -1, m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex,
                                                m_pdSolverFine->m_tetInvD3x3, m_pdSolverFine->m_tetVolume,
                                                m_pdSolverFine->m_volumnStiffness);  // 计算能量，测 fps 时需要注释
     // 2. 插值到细网格
@@ -152,7 +151,7 @@ void PDSolver_MG::Step() {
     // 3. 细网格迭代到收敛
     omega = 1.0f;
     for (int i = 0; i < 32; i++) {
-        m_pdSolverFine->pdSolverData->runCalEnergy(i, m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex,
+        m_pdSolverFine->pdSolverData->runCalEnergy(false, i, m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex,
                                                    m_pdSolverFine->m_tetInvD3x3, m_pdSolverFine->m_tetVolume,
                                                    m_pdSolverFine->m_volumnStiffness);  // 计算能量，测 fps 时需要注释
 
