@@ -9,13 +9,12 @@
 using namespace std;
 class Simulator {
 public:
-    enum SolverType { PD, PD_MG };
+    
 
     SoftObject* m_softObject;
     SoftObject* m_softObject_coarse;
     PDSolver* m_solver;
     PDSolver_MG* m_solver_mg;
-    SolverType m_solverType;
 
     vector<float> m_tetVertPos;         // 这里需要复制一份顶点数据是用于与解算器解耦
     vector<int> m_tetIdx;               // 同上

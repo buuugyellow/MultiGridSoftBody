@@ -8,6 +8,8 @@
 
 using namespace std;
 
+int g_stepCnt = 0;
+
 Simulator& Simulator::GetInstance() {
     static Simulator instance;
     return instance;
@@ -44,9 +46,8 @@ void Simulator::Init() {
         m_normal.push_back(0.0f);
     }
 
-    m_solverType = PD_MG;
     // 解算器初始化
-    switch (m_solverType) {
+    switch (g_solverType) {
         case PD:
             m_solver = new PDSolver();
             m_solver->Init(m_tetIdx, m_tetVertPos);
@@ -57,16 +58,14 @@ void Simulator::Init() {
                               m_softObject->m_tetVertPosORIG);
             break;
     }
-    LOG(INFO) << "solver: " << m_solverType << " Init 结束";
+    LOG(INFO) << "solver: " << g_solverType << " Init 结束";
 }
 
 void Simulator::Update() {
-    static int cnt = 0;
-    if (cnt > 300) return;
-    cnt++;
-    cout << "step frame " << cnt << endl;
+    if (g_stepCnt++ > 300) return;
+    cout << "step frame " << g_stepCnt << endl;
 
-    switch (m_solverType) {
+    switch (g_solverType) {
         case PD:
             m_solver->Step();
             break;

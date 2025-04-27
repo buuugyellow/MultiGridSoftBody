@@ -334,7 +334,7 @@ void PDSolverData::runTestConvergence(int iter) {
     printf("iter: %d, deltaX: %f, rate: %f\n", iter, deltaX, deltaXRate);
 }
 
-void PDSolverData::runCalEnergy(bool stepEnd, int iter, float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex,
+void PDSolverData::runCalEnergy(bool iterBegin, bool stepEnd, int iter, float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex,
                                 const vector<float>& m_tetInvD3x3, const vector<float>& m_tetVolume, float m_volumnStiffness) {
     vector<float> tetVertPos_h(tetVertNum * 3);
     vector<float> tetVertPos_old_h(tetVertNum * 3);
@@ -405,6 +405,19 @@ void PDSolverData::runCalEnergy(bool stepEnd, int iter, float m_dt, const vector
         Ep += e;
     }
 
-    fprintf(energyOutputFile, "%d,%f,%f,%f,%f\n", iter, Ek + Ep, Ek, Ep, deltaX);
-    // if (stepEnd) fprintf(energyStepFile, "%f,%f,%f\n", Ek + Ep, Ek, Ep);
+    float error = 0;
+    if (config_writeOrReadEnergy) { // 写收敛时的能量
+        if (stepEnd) fprintf(energyStepFile, "%f,%f,%f\n", Ek + Ep, Ek, Ep);
+    } else { // 读收敛时的能量，并且计算误差
+        static float E0;
+        if (iterBegin) E0 = Ek + Ep;
+        if (g_stepCnt < 200) {
+            float E_convergence = g_conEnergy[g_stepCnt - 1];
+            float Ek_convergence;
+            float Ep_convergence;
+            error = (Ek + Ep - E_convergence) / (E0 - E_convergence);
+        }
+    }
+
+    fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", iter, Ek + Ep, Ek, Ep, deltaX, error);
 }

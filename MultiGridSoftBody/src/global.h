@@ -13,13 +13,19 @@ extern string config_objName_coarse;
 extern string config_dataDir;
 extern FILE* energyOutputFile;
 extern FILE* energyStepFile;
+extern bool config_writeOrReadEnergy;
 extern vector<float> g_pointsForRender;  // 仿真线程渲染线程共享的顶点数据，需要传递的包括：顶点坐标 + 法向量 + UV坐标
 extern vector<float> g_normalsForRender;
 extern vector<float> g_uvForRender;
 
 extern Application* g_render;
 extern Simulator* g_simulator;
-
+extern int g_stepCnt;
+extern vector<float> g_conEnergy;  // 保留读取的收敛能量
+extern vector<float> g_conEk;       // 保留读取的收敛能量
+extern vector<float> g_conEp;       // 保留读取的收敛能量
+enum SolverType { PD, PD_MG };
+extern SolverType g_solverType;
 extern double duration_physical;
 
 void OutputPosNormIndex(string filepath, std::vector<float> pos, std::vector<float> norm, std::vector<unsigned int> index);

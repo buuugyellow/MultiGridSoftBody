@@ -31,8 +31,8 @@ struct PDSolverData {
     void runCalculateV(float m_dt);
     void runCpyTetVertForRender();
     void runTestConvergence(int iter);
-    void runCalEnergy(bool stepEnd, int iter, float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex, const vector<float>& m_tetInvD3x3,
-                      const vector<float>& m_tetVolume, float m_volumnStiffness);
+    void runCalEnergy(bool iterBegin, bool stepEnd, int iter, float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex,
+                      const vector<float>& m_tetInvD3x3, const vector<float>& m_tetVolume, float m_volumnStiffness);
 };
 
 class PDSolver {

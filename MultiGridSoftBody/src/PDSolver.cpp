@@ -168,7 +168,7 @@ void PDSolver::Step() {
     pdSolverData->runCalculateST(m_damping, m_dt, m_gravityX, m_gravityY, m_gravityZ);
     float omega = 1.0f;
     for (int i = 0; i < m_iterNum; i++) {
-        pdSolverData->runCalEnergy(i == m_iterNum - 1, i, m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume,
+        pdSolverData->runCalEnergy(i == 0, i == m_iterNum - 1, i, m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume,
                                    m_volumnStiffness);  // 计算能量，测 fps 时需要注释
 
         pdSolverData->runClearTemp();

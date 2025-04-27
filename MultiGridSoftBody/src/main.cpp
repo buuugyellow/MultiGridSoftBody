@@ -20,9 +20,16 @@ string config_dataDir;
 string config_objName;  // 单一物体
 string config_objName_coarse;
 string config_energyOutputCsv;
-string config_energyStepCsv;
+string config_energyStepInCsv;
+string config_energyStepOutCsv;
 FILE* energyOutputFile;
-FILE* energyStepFile; // 每次 step 结束之后的能量，用于记录收敛状态的能量
+FILE* energyStepFile;           // 每次 step 结束之后的能量，用于记录收敛状态的能量
+bool config_writeOrReadEnergy;  // 读取或者写入收敛能量文件
+vector<float> g_conEnergy;      // 保留读取的收敛能量
+vector<float> g_conEk;          // 保留读取的收敛能量
+vector<float> g_conEp;          // 保留读取的收敛能量
+
+SolverType g_solverType;
 
 Application* g_render;
 Simulator* g_simulator;
@@ -104,29 +111,58 @@ void renderLoop() {
     exit(ret);
 }
 
-void init() {
-    config_dataDir = "../data/";
-    config_objName = "cube120_12_12";  // 单一物体
-    config_objName_coarse = "cube40_4_4";
-    FLAGS_log_dir = "../temp/log/";
-    config_energyOutputCsv = "../temp/energy.csv";
-    config_energyStepCsv = "../temp/energyConvergence.csv";
-    FLAGS_logtostderr = true;
-    FLAGS_stderrthreshold = 0;
-    google::InitGoogleLogging("MultiGridSoftBody");
+void fileIO() {
     errno_t err = fopen_s(&energyOutputFile, config_energyOutputCsv.c_str(), "w+");
     if (err) {
         LOG(ERROR) << "打开 csv 文件失败";
     } else {
-        fprintf(energyOutputFile, "iter,Energy,Ek,Ep,deltaX\n");
+        fprintf(energyOutputFile, "iter,Energy,Ek,Ep,deltaX,error\n");
     }
-    err = fopen_s(&energyStepFile, config_energyStepCsv.c_str(), "w+");
-    if (err) {
-        LOG(ERROR) << "打开 csv 文件失败";
+    
+    if (config_writeOrReadEnergy) {
+        err = fopen_s(&energyStepFile, config_energyStepOutCsv.c_str(), "w+");
+        if (err) {
+            LOG(ERROR) << "打开 csv 文件失败";
+        } else {
+            fprintf(energyStepFile, "Energy,Ek,Ep\n");
+        }
     } else {
-        fprintf(energyStepFile, "Energy,Ek,Ep\n");
+        err = fopen_s(&energyStepFile, config_energyStepInCsv.c_str(), "r");
+        if (err) {
+            LOG(ERROR) << "打开 csv 文件失败";
+        } else {
+            char row[80];
+            char* ptr = NULL;
+            fgets(row, 80, energyStepFile);
+            LOG(INFO) << "energyStepFile 首行：" << row;
+            int cnt = 0;
+            while (fgets(row, 80, energyStepFile) != NULL && ++cnt < 200) {
+                char* token = strtok_s(row, ",", &ptr);
+                g_conEnergy.push_back(stof(token));
+                token = strtok_s(NULL, ",", &ptr);
+                g_conEk.push_back(stof(token));
+                token = strtok_s(NULL, ",", &ptr);
+                g_conEp.push_back(stof(token));
+            }
+        }
     }
+}
 
+void init() {
+    config_dataDir = "../data/";
+    config_objName = "cube120_12_12";  // 单一物体
+    config_objName_coarse = "cube40_4_4";
+    g_solverType = PD;
+    FLAGS_log_dir = "../temp/log/";
+    config_energyOutputCsv = "../temp/energy.csv";
+    config_energyStepInCsv = "../data/120_256iter.csv";
+    config_energyStepOutCsv = "../temp/energyStepOut.csv";
+    config_writeOrReadEnergy = false;
+    FLAGS_logtostderr = true;
+    FLAGS_stderrthreshold = 0;
+    google::InitGoogleLogging("MultiGridSoftBody");
+    
+    fileIO();
     initCuda();
     g_simulator = &Simulator::GetInstance();
     g_simulator->Init();
