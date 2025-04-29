@@ -28,6 +28,9 @@ bool config_writeOrReadEnergy;  // 读取或者写入收敛能量文件
 vector<float> g_conEnergy;      // 保留读取的收敛能量
 vector<float> g_conEk;          // 保留读取的收敛能量
 vector<float> g_conEp;          // 保留读取的收敛能量
+float g_conEnergy_V2;           // 每次迭代都先跑一次收敛 step，记录能量
+float g_conEk_V2;
+float g_conEp_V2;
 
 SolverType g_solverType;
 

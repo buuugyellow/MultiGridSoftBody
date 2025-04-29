@@ -24,6 +24,9 @@ extern int g_stepCnt;
 extern vector<float> g_conEnergy;  // 保留读取的收敛能量
 extern vector<float> g_conEk;       // 保留读取的收敛能量
 extern vector<float> g_conEp;       // 保留读取的收敛能量
+extern float g_conEnergy_V2;         // 每次迭代都先跑一次收敛 step，记录能量
+extern float g_conEk_V2;
+extern float g_conEp_V2;
 enum SolverType { PD, PD_MG };
 extern SolverType g_solverType;
 extern double duration_physical;

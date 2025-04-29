@@ -33,6 +33,8 @@ void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* 
 
     cudaMalloc((void**)&tetVertVelocity_d, tetVertNum * 3 * sizeof(float));
     cudaMemset(tetVertVelocity_d, 0.0f, tetVertNum * 3 * sizeof(float));
+    cudaMalloc((void**)&tetVertVelocityBak_d, tetVertNum * 3 * sizeof(float));
+    cudaMemset(tetVertVelocityBak_d, 0.0f, tetVertNum * 3 * sizeof(float));
     cudaMalloc((void**)&tetVertExternForce_d, tetVertNum * 3 * sizeof(float));
     cudaMemset(tetVertExternForce_d, 0.0f, tetVertNum * 3 * sizeof(float));
     cudaMalloc((void**)&tetVertForce_d, tetVertNum * 3 * sizeof(float));
@@ -243,6 +245,13 @@ void PDSolverData::runCpyTetVertForRender() {
     cudaMemcpy(g_simulator->m_tetVertPos.data(), tetVertPos_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
 }
 
+void PDSolverData::runResetPosVel() {
+    cudaMemcpy(tetVertPos_d, tetVertPos_last_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToDevice);
+    cudaMemcpy(tetVertVelocity_d, tetVertVelocityBak_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToDevice);
+}
+
+void PDSolverData::runSaveVel() { cudaMemcpy(tetVertVelocityBak_d, tetVertVelocity_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToDevice); }
+
 __global__ void interpolate(int tetVertNumFine, float* tetVertPosFine, float* tetVertPosPrevFine, float* tetVertPosCoarse, int* interpolationIds,
                             float* interpolationWights) {
     unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -334,8 +343,8 @@ void PDSolverData::runTestConvergence(int iter) {
     printf("iter: %d, deltaX: %f, rate: %f\n", iter, deltaX, deltaXRate);
 }
 
-void PDSolverData::runCalEnergy(bool iterBegin, bool stepEnd, int iter, float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex,
-                                const vector<float>& m_tetInvD3x3, const vector<float>& m_tetVolume, float m_volumnStiffness) {
+void PDSolverData::runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex, const vector<float>& m_tetInvD3x3,
+                                const vector<float>& m_tetVolume, float m_volumnStiffness, float& Ek, float& Ep, float& dX) {
     vector<float> tetVertPos_h(tetVertNum * 3);
     vector<float> tetVertPos_old_h(tetVertNum * 3);
     vector<float> tetVertPos_prev_h(tetVertNum * 3);
@@ -343,9 +352,9 @@ void PDSolverData::runCalEnergy(bool iterBegin, bool stepEnd, int iter, float m_
     cudaMemcpy(tetVertPos_old_h.data(), tetVertPos_old_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(tetVertPos_prev_h.data(), tetVertPos_prev_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
 
+    Ek = Ep = dX = 0;
+
     // 计算 deltaX, Ek
-    double deltaX = 0;
-    double Ek = 0;
     for (int i = 0; i < tetVertNum; i++) {
         float vx = tetVertPos_h[i * 3 + 0];
         float vy = tetVertPos_h[i * 3 + 1];
@@ -357,14 +366,13 @@ void PDSolverData::runCalEnergy(bool iterBegin, bool stepEnd, int iter, float m_
         float vy_st = tetVertPos_old_h[i * 3 + 1];
         float vz_st = tetVertPos_old_h[i * 3 + 2];
 
-        deltaX += (pow((vx - vx_pre), 2) + pow((vy - vy_pre), 2) + pow((vz - vz_pre), 2));
+        dX += (pow((vx - vx_pre), 2) + pow((vy - vy_pre), 2) + pow((vz - vz_pre), 2));
         Ek += m_tetVertMass[i] * (pow((vx - vx_st), 2) + pow((vy - vy_st), 2) + pow((vz - vz_st), 2));
     }
-    deltaX = sqrt(deltaX);
+    dX = sqrt(dX);
     Ek = Ek / (2 * m_dt * m_dt);
 
     // 计算 Ep
-    double Ep = 0;
     for (int i = 0; i < tetNum; i++) {
         int vIndex0 = m_tetIndex[i * 4 + 0];
         int vIndex1 = m_tetIndex[i * 4 + 1];
@@ -405,19 +413,18 @@ void PDSolverData::runCalEnergy(bool iterBegin, bool stepEnd, int iter, float m_
         Ep += e;
     }
 
-    float error = 0;
-    if (config_writeOrReadEnergy) { // 写收敛时的能量
-        if (stepEnd) fprintf(energyStepFile, "%f,%f,%f\n", Ek + Ep, Ek, Ep);
-    } else { // 读收敛时的能量，并且计算误差
-        static float E0;
-        if (iterBegin) E0 = Ek + Ep;
-        if (g_stepCnt < 200) {
-            float E_convergence = g_conEnergy[g_stepCnt - 1];
-            float Ek_convergence;
-            float Ep_convergence;
-            error = (Ek + Ep - E_convergence) / (E0 - E_convergence);
-        }
-    }
-
-    fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", iter, Ek + Ep, Ek, Ep, deltaX, error);
+    //float error = 0;
+    //if (config_writeOrReadEnergy) {  // 写收敛时的能量
+    //    if (stepEnd) fprintf(energyStepFile, "%f,%f,%f\n", Ek + Ep, Ek, Ep);
+    //} else {  // 读收敛时的能量，并且计算误差
+    //    static float E0;
+    //    if (iterBegin) E0 = Ek + Ep;
+    //    if (g_stepCnt < 200) {
+    //        float E_convergence = g_conEnergy[g_stepCnt - 1];
+    //        float Ek_convergence;
+    //        float Ep_convergence;
+    //        error = (Ek + Ep - E_convergence) / (E0 - E_convergence);
+    //    }
+    //}
+    //fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", iter, Ek + Ep, Ek, Ep, dX, error);
 }

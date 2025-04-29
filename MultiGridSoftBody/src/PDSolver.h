@@ -19,6 +19,7 @@ struct PDSolverData {
     float* tetVertPos_prev_d;     // 上一次迭代，tetVertNum*3
     float* tetVertPos_next_d;     // 下一步位置，tetVertNum*3
     float* tetVertVelocity_d;     // 速度，tetVertNum*3
+    float* tetVertVelocityBak_d;  // 速度的备份，用于收敛 step 中的计算
     float* tetVertExternForce_d;  // 外力，tetVertNum*3
     float* tetVertForce_d;        // 顶点受力, tetVertNum*3
 
@@ -30,14 +31,17 @@ struct PDSolverData {
     void runcalculatePOS(float omega, float m_dt);
     void runCalculateV(float m_dt);
     void runCpyTetVertForRender();
+    void runResetPosVel();
+    void runSaveVel();
     void runTestConvergence(int iter);
-    void runCalEnergy(bool iterBegin, bool stepEnd, int iter, float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex,
-                      const vector<float>& m_tetInvD3x3, const vector<float>& m_tetVolume, float m_volumnStiffness);
+    void runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex, const vector<float>& m_tetInvD3x3,
+                      const vector<float>& m_tetVolume, float m_volumnStiffness, float& Ek, float& Ep, float& dX);
 };
 
 class PDSolver {
 public:
     int m_iterNum;
+    int m_iterNumCvg;  // 收敛所需的迭代次数
     float m_dt;
     float m_damping;
     float m_volumnStiffness;
@@ -63,6 +67,7 @@ public:
 
     void Init(const vector<int>& tetIdx, const vector<float> tetVertPos);
     void Step();
+    void StepForConvergence();
     void InitVolumeConstraint();
     void SetFixedVert();
 };

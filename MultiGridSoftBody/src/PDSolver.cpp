@@ -139,7 +139,8 @@ void PDSolver::SetFixedVert() {
 }
 
 void PDSolver::Init(const vector<int>& tetIdx, const vector<float> tetVertPos) {
-    m_iterNum = 128;
+    m_iterNum = 32;
+    m_iterNumCvg = 128;
     m_dt = 1.0f / 30.0f;
     m_damping = 0.5f;
     m_volumnStiffness = 1000.0f;
@@ -163,18 +164,49 @@ void PDSolver::Init(const vector<int>& tetIdx, const vector<float> tetVertPos) {
     LOG(INFO) << "pdSolverData Init 结束";
 }
 
-void PDSolver::Step() {
-    auto start = std::chrono::high_resolution_clock::now();
+void PDSolver::StepForConvergence() {
+    float Ek, Ep, dX;
+    pdSolverData->runSaveVel();
     pdSolverData->runCalculateST(m_damping, m_dt, m_gravityX, m_gravityY, m_gravityZ);
+    pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, dX);
+    fprintf(energyOutputFile, "%d,%f,%f,%f,%f\n", 0, Ek + Ep, Ek, Ep, dX);
     float omega = 1.0f;
-    for (int i = 0; i < m_iterNum; i++) {
-        pdSolverData->runCalEnergy(i == 0, i == m_iterNum - 1, i, m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume,
-                                   m_volumnStiffness);  // 计算能量，测 fps 时需要注释
-
+    for (int i = 0; i < m_iterNumCvg; i++) {
         pdSolverData->runClearTemp();
         pdSolverData->runCalculateIF(m_volumnStiffness);
         omega = 4 / (4 - m_rho * m_rho * omega);
         pdSolverData->runcalculatePOS(omega, m_dt);
+
+        pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, dX);
+        fprintf(energyOutputFile, "%d,%f,%f,%f,%f\n", i + 1, Ek + Ep, Ek, Ep, dX);
+    }
+    pdSolverData->runResetPosVel();
+    g_conEnergy_V2 = Ek + Ep;
+}
+
+void PDSolver::Step() {
+    static float E0 = 0;
+    float Ek, Ep, dX, error;
+    auto start = std::chrono::high_resolution_clock::now();
+
+    StepForConvergence();
+
+    pdSolverData->runCalculateST(m_damping, m_dt, m_gravityX, m_gravityY, m_gravityZ);
+    pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, dX);
+    E0 = Ep + Ek;
+    if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
+    fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", 0, Ek + Ep, Ek, Ep, dX, error);
+
+    float omega = 1.0f;
+    for (int i = 0; i < m_iterNum; i++) {
+        pdSolverData->runClearTemp();
+        pdSolverData->runCalculateIF(m_volumnStiffness);
+        omega = 4 / (4 - m_rho * m_rho * omega);
+        pdSolverData->runcalculatePOS(omega, m_dt);
+
+        pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, dX);
+        if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
+        fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", i + 1, Ek + Ep, Ek, Ep, dX, error);
     }
     pdSolverData->runCalculateV(m_dt);
     pdSolverData->runCpyTetVertForRender();
