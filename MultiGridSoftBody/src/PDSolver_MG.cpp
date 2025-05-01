@@ -148,10 +148,14 @@ void PDSolver_MG::Step() {
 
     // 插值到细网格
     runInterpolate();
+    m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex, m_pdSolverFine->m_tetInvD3x3,
+                                               m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX);
+    if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
+    fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", 1, Ek + Ep, Ek, Ep, dX, error);
 
     // 细网格迭代到收敛
     omega = 1.0f;
-    for (int i = 0; i < 128; i++) {
+    for (int i = 0; i < 32; i++) {
         m_pdSolverFine->pdSolverData->runClearTemp();
         m_pdSolverFine->pdSolverData->runCalculateIF(m_pdSolverFine->m_volumnStiffness);
         omega = 4 / (4 - m_pdSolverFine->m_rho * m_pdSolverFine->m_rho * omega);
@@ -160,7 +164,7 @@ void PDSolver_MG::Step() {
         m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex,
                                                    m_pdSolverFine->m_tetInvD3x3, m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX);
         if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
-        fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", i + 1, Ek + Ep, Ek, Ep, dX, error);
+        fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", i + 2, Ek + Ep, Ek, Ep, dX, error);
     }
 
     // 平均到粗网格
