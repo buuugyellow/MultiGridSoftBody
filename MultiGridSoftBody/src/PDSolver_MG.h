@@ -18,4 +18,5 @@ public:
     void Step();
     void runInterpolate();
     void runAverage();
+    void runUpdateMapping();
 };

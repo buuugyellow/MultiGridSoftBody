@@ -33,7 +33,6 @@
     <ClCompile Include="src\Simulator.cpp" />
     <ClCompile Include="src\SoftObject.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\utils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\3rd\imgui\imconfig.h" />
@@ -45,7 +44,6 @@
     <ClInclude Include="..\3rd\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\3rd\imgui\imstb_textedit.h" />
     <ClInclude Include="..\3rd\imgui\imstb_truetype.h" />
-    <ClInclude Include="src\cudaUtils.h" />
     <ClInclude Include="src\PDSolver.h" />
     <ClInclude Include="src\gui.h" />
     <ClInclude Include="src\PDSolver_MG.h" />
@@ -53,7 +51,7 @@
     <ClInclude Include="src\SoftObject.h" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="src\cudaUtils.cu" />
+    <CudaCompile Include="src\utils.cu" />
     <CudaCompile Include="src\PDSolver.cu">
       <FileType>Document</FileType>
     </CudaCompile>
@@ -181,6 +179,6 @@
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.4.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.1.targets" />
   </ImportGroup>
 </Project>

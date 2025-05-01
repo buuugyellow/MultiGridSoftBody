@@ -13,9 +13,6 @@
     <Filter Include="全局类">
       <UniqueIdentifier>{6c772e4f-5164-4cd9-b395-801b810eaacb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="工具">
-      <UniqueIdentifier>{68eda3a1-3b9b-498a-b3fe-8c278c180571}</UniqueIdentifier>
-    </Filter>
     <Filter Include="imgui">
       <UniqueIdentifier>{d3966d6b-54c9-4d92-8e3a-d6b08f773714}</UniqueIdentifier>
     </Filter>
@@ -35,9 +32,6 @@
     </ClCompile>
     <ClCompile Include="src\global.h">
       <Filter>全局类</Filter>
-    </ClCompile>
-    <ClCompile Include="src\utils.cpp">
-      <Filter>工具</Filter>
     </ClCompile>
     <ClCompile Include="src\PDSolver.cpp">
       <Filter>解算器</Filter>
@@ -80,9 +74,6 @@
     <ClInclude Include="src\PDSolver.h">
       <Filter>解算器</Filter>
     </ClInclude>
-    <ClInclude Include="src\cudaUtils.h">
-      <Filter>工具</Filter>
-    </ClInclude>
     <ClInclude Include="..\3rd\imgui\imconfig.h">
       <Filter>imgui</Filter>
     </ClInclude>
@@ -118,8 +109,8 @@
     <CudaCompile Include="src\PDSolver.cu">
       <Filter>解算器</Filter>
     </CudaCompile>
-    <CudaCompile Include="src\cudaUtils.cu">
-      <Filter>工具</Filter>
+    <CudaCompile Include="src\utils.cu">
+      <Filter>全局类</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

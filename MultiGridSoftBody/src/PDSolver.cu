@@ -1,9 +1,8 @@
+#include "global.h"
+
 #include <math.h>
 #include <stdio.h>
-
 #include <memory>
-
-#include "global.h"
 
 void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
                         float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h) {
@@ -288,13 +287,13 @@ __global__ void updatePointInTet(int vertNum, float* vertPos, float* vertPosPrev
     float w1 = mapWights[threadid * 4 + 1];
     float w2 = mapWights[threadid * 4 + 2];
     float w3 = mapWights[threadid * 4 + 3];
-    float tVPosCoarse0[3] = {tetVertPos[id0 * 3 + 0], tetVertPos[id0 * 3 + 1], tetVertPos[id0 * 3 + 2]};
-    float tVPosCoarse1[3] = {tetVertPos[id1 * 3 + 0], tetVertPos[id1 * 3 + 1], tetVertPos[id1 * 3 + 2]};
-    float tVPosCoarse2[3] = {tetVertPos[id2 * 3 + 0], tetVertPos[id2 * 3 + 1], tetVertPos[id2 * 3 + 2]};
-    float tVPosCoarse3[3] = {tetVertPos[id3 * 3 + 0], tetVertPos[id3 * 3 + 1], tetVertPos[id3 * 3 + 2]};
+    float tVPos0[3] = {tetVertPos[id0 * 3 + 0], tetVertPos[id0 * 3 + 1], tetVertPos[id0 * 3 + 2]};
+    float tVPos1[3] = {tetVertPos[id1 * 3 + 0], tetVertPos[id1 * 3 + 1], tetVertPos[id1 * 3 + 2]};
+    float tVPos2[3] = {tetVertPos[id2 * 3 + 0], tetVertPos[id2 * 3 + 1], tetVertPos[id2 * 3 + 2]};
+    float tVPos3[3] = {tetVertPos[id3 * 3 + 0], tetVertPos[id3 * 3 + 1], tetVertPos[id3 * 3 + 2]};
 
     for (int i = 0; i < 3; i++) {
-        vertPosPrev[threadid * 3 + i] = vertPos[threadid * 3 + i] = w0 * tVPosCoarse0[i] + w1 * tVPosCoarse1[i] + w2 * tVPosCoarse2[i] + w3 * tVPosCoarse3[i];
+        vertPosPrev[threadid * 3 + i] = vertPos[threadid * 3 + i] = w0 * tVPos0[i] + w1 * tVPos1[i] + w2 * tVPos2[i] + w3 * tVPos3[i];
     }
 }
 
@@ -319,6 +318,39 @@ void PDSolver_MG::runAverage() {
 #ifdef PRINT_CUDA_ERROR
     cudaDeviceSynchronize();
     printCudaError("runAverage");
+#endif  //  PRINT_CUDA_ERROR
+}
+
+__global__ void updateMapping(int tetVertNumFine, float* tetVertPosFine, int* interpolationIds, float* interpolationWights, float* tetVertPosCoarse) {
+    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (threadid >= tetVertNumFine) return;
+
+    float tVPosFine[3] = {tetVertPosFine[threadid * 3 + 0], tetVertPosFine[threadid * 3 + 1], tetVertPosFine[threadid * 3 + 2]};
+
+    int id0 = interpolationIds[threadid * 4 + 0];
+    int id1 = interpolationIds[threadid * 4 + 1];
+    int id2 = interpolationIds[threadid * 4 + 2];
+    int id3 = interpolationIds[threadid * 4 + 3];
+    Point3D tVPosCoarse0 = {tetVertPosCoarse[id0 * 3 + 0], tetVertPosCoarse[id0 * 3 + 1], tetVertPosCoarse[id0 * 3 + 2]};
+    Point3D tVPosCoarse1 = {tetVertPosCoarse[id1 * 3 + 0], tetVertPosCoarse[id1 * 3 + 1], tetVertPosCoarse[id1 * 3 + 2]};
+    Point3D tVPosCoarse2 = {tetVertPosCoarse[id2 * 3 + 0], tetVertPosCoarse[id2 * 3 + 1], tetVertPosCoarse[id2 * 3 + 2]};
+    Point3D tVPosCoarse3 = {tetVertPosCoarse[id3 * 3 + 0], tetVertPosCoarse[id3 * 3 + 1], tetVertPosCoarse[id3 * 3 + 2]};
+
+    float w0, w1, w2, w3;
+    barycentricCoordinate(tVPosFine, tVPosCoarse0, tVPosCoarse1, tVPosCoarse2, tVPosCoarse3,w0,w1,w2,w3);
+    interpolationWights[threadid * 4 + 0] = w0;
+    interpolationWights[threadid * 4 + 1] = w1;
+    interpolationWights[threadid * 4 + 2] = w2;
+    interpolationWights[threadid * 4 + 3] = w3;
+}
+
+void PDSolver_MG::runUpdateMapping() { int threadNum = 512;
+    int blockNum = (m_pdSolverFine->m_tetVertNum + threadNum - 1) / threadNum;
+    updateMapping<<<blockNum, threadNum>>>(m_pdSolverFine->m_tetVertNum, m_pdSolverFine->pdSolverData->tetVertPos_d, interpolationIds_d, interpolationWights_d,
+                                           m_pdSolverCoarse->pdSolverData->tetVertPos_d);
+#ifdef PRINT_CUDA_ERROR
+    cudaDeviceSynchronize();
+    printCudaError("runUpdateMapping");
 #endif  //  PRINT_CUDA_ERROR
 }
 
