@@ -54,7 +54,9 @@ __device__ __host__ struct Point3D {
 };
 
 __device__ __host__ Point3D operator-(const Point3D& a, const Point3D& b);  // 向量减法
+__device__ __host__ Point3D operator+(const Point3D& a, const Point3D& b);  // 向量加法
 __device__ __host__ Point3D operator/(const Point3D& a, float b);            // 标量除法
+__device__ __host__ Point3D operator*(const Point3D& a, float b);            // 标量乘法
 __device__ __host__ Point3D crossProduct(const Point3D& a, const Point3D& b);  // 叉乘计算
 __device__ __host__ float dotProduct(const Point3D& a, const Point3D& b);                  // 点积计算
 __device__ __host__ float vectorLength(const Point3D& v);                       // 向量模长
@@ -62,5 +64,5 @@ __device__ __host__ bool pointInTet(const float* tetVertPos, const float* tetFac
 __device__ __host__ vector<float> barycentricCoordinate(const float* point, const float* tetCenter, const float* tetFaceArea, const float* tetFaceNormal,
                                                        float V); // 有预计算数据的四面体重心坐标计算，如四面体体积、三角形面积等
 __device__ __host__ void barycentricCoordinate(const Point3D& point, const Point3D& tetVertA, const Point3D& tetVertB, const Point3D& tetVertC,
-                                              const Point3D& tetVertD, float& w0,
-                           float& w1, float& w2, float& w3);
+                                               const Point3D& tetVertD, float* weights);
+__device__ __host__ float GetVolumn(const Point3D& A, const Point3D& B, const Point3D& C, const Point3D& D);

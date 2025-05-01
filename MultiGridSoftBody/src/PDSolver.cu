@@ -336,12 +336,12 @@ __global__ void updateMapping(int tetVertNumFine, float* tetVertPosFine, int* in
     Point3D tVPosCoarse2 = {tetVertPosCoarse[id2 * 3 + 0], tetVertPosCoarse[id2 * 3 + 1], tetVertPosCoarse[id2 * 3 + 2]};
     Point3D tVPosCoarse3 = {tetVertPosCoarse[id3 * 3 + 0], tetVertPosCoarse[id3 * 3 + 1], tetVertPosCoarse[id3 * 3 + 2]};
 
-    float w0, w1, w2, w3;
-    barycentricCoordinate(tVPosFine, tVPosCoarse0, tVPosCoarse1, tVPosCoarse2, tVPosCoarse3,w0,w1,w2,w3);
-    interpolationWights[threadid * 4 + 0] = w0;
-    interpolationWights[threadid * 4 + 1] = w1;
-    interpolationWights[threadid * 4 + 2] = w2;
-    interpolationWights[threadid * 4 + 3] = w3;
+    float weights[4] = {0.25f};
+    barycentricCoordinate(tVPosFine, tVPosCoarse0, tVPosCoarse1, tVPosCoarse2, tVPosCoarse3, weights);
+    interpolationWights[threadid * 4 + 0] = weights[0];
+    interpolationWights[threadid * 4 + 1] = weights[1];
+    interpolationWights[threadid * 4 + 2] = weights[2];
+    interpolationWights[threadid * 4 + 3] = weights[3];
 }
 
 void PDSolver_MG::runUpdateMapping() { int threadNum = 512;

@@ -196,20 +196,48 @@ __device__ __host__ float Matrix_Inverse_3(float* A, float* R) {
     R[7] = A[1] * A[6] - A[0] * A[7];
     R[8] = A[0] * A[4] - A[1] * A[3];
     float det = A[0] * R[0] + A[3] * R[1] + A[6] * R[2];
-    if (fabs(det) < 1e-7) {
-        printf("det is %f\n", det);
-        det = 1e-5;
+    if (fabs(det) < 1e-6) {
+        printf("det is %f, 四面体退化\n", det);
+        // det = 1e-5;
+        exit(0);
     }
     float inv_det = 1 / det;
     for (int i = 0; i < 9; i++) R[i] *= inv_det;
     return det;
 }
 
+__device__ __host__ float GetVolumn(const Point3D& A, const Point3D& B, const Point3D& C, const Point3D& D) {
+    Point3D AB = B - A;
+    Point3D AC = C - A;
+    Point3D AD = D - A;
+    float Deformation[9] = {AB.x, AC.x, AD.x, AB.y, AC.y, AD.y, AB.z, AC.z, AD.z};
+    float R[9];
+    R[0] = Deformation[4] * Deformation[8] - Deformation[7] * Deformation[5];
+    R[1] = Deformation[7] * Deformation[2] - Deformation[1] * Deformation[8];
+    R[2] = Deformation[1] * Deformation[5] - Deformation[4] * Deformation[2];
+    R[3] = Deformation[5] * Deformation[6] - Deformation[3] * Deformation[8];
+    R[4] = Deformation[0] * Deformation[8] - Deformation[2] * Deformation[6];
+    R[5] = Deformation[2] * Deformation[3] - Deformation[0] * Deformation[5];
+    R[6] = Deformation[3] * Deformation[7] - Deformation[4] * Deformation[6];
+    R[7] = Deformation[1] * Deformation[6] - Deformation[0] * Deformation[7];
+    R[8] = Deformation[0] * Deformation[4] - Deformation[1] * Deformation[3];
+    float det = Deformation[0] * R[0] + Deformation[3] * R[1] + Deformation[6] * R[2];
+    if (fabs(det) < 1e-6) {
+        printf("det is %f, 四面体退化\n", det);
+        exit(0);
+    }
+    return det;
+}
+
 __device__ __host__ Point3D operator-(const Point3D& a, const Point3D& b) { return {a.x - b.x, a.y - b.y, a.z - b.z}; }
+
+__device__ __host__ Point3D operator+(const Point3D& a, const Point3D& b) { return {a.x + b.x, a.y + b.y, a.z + b.z}; }
 
 __device__ __host__ Point3D crossProduct(const Point3D& a, const Point3D& b) { return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x}; }
 
 __device__ __host__ Point3D operator/(const Point3D& a, float b) { return {a.x / b, a.y / b, a.z / b}; }
+
+__device__ __host__ Point3D operator*(const Point3D& a, float b) { return {a.x * b, a.y * b, a.z * b}; }
 
 __device__ __host__ float dotProduct(const Point3D& a, const Point3D& b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
 
@@ -253,4 +281,32 @@ __device__ __host__ vector<float> barycentricCoordinate(const float* point, cons
 }
 
 __device__ __host__ void barycentricCoordinate(const Point3D& point, const Point3D& tetVertA, const Point3D& tetVertB, const Point3D& tetVertC,
-                                                        const Point3D& tetVertD, float& w0, float& w1, float& w2, float& w3) {}
+                                               const Point3D& tetVertD, float* weights) {
+    float V = GetVolumn(tetVertA, tetVertB, tetVertC, tetVertD);
+    Point3D center = (tetVertA + tetVertB + tetVertC + tetVertD) * 0.25f;
+    Point3D tetVerts[4] = {tetVertA, tetVertB, tetVertC, tetVertD};
+    int pointFacePair[4][4] = {{0, 1, 2, 3}, {1, 2, 3, 0}, {2, 3, 0, 1}, {3, 0, 1, 2}};
+    for (int i = 0; i < 4; i++) {
+        Point3D p = tetVerts[pointFacePair[i][0]];
+        Point3D facePoint0 = tetVerts[pointFacePair[i][1]];
+        Point3D facePoint1 = tetVerts[pointFacePair[i][2]];
+        Point3D facePoint2 = tetVerts[pointFacePair[i][3]];
+
+        Point3D edge01 = facePoint1 - facePoint0;
+        Point3D edge02 = facePoint2 - facePoint0;
+
+        Point3D normal = crossProduct(edge01, edge02);
+        Point3D edge0p = p - facePoint0;
+        if (dotProduct(normal, edge0p) > 0){ // 前面有先判断四面体体积是否为 0，此处应该不会有较小值
+            normal.x = -normal.x;
+            normal.y = -normal.y;
+            normal.z = -normal.z;
+        }
+
+        float len = vectorLength(normal);
+        float area = len * 0.5f;
+        normal = normal / len;
+
+        weights[i] = 0.25f - dotProduct(point - center, normal) * area / (3 * V);
+    }
+}
