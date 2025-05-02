@@ -155,7 +155,7 @@ void init() {
     config_dataDir = "../data/";
     config_objName = "cube120_12_12";  // 单一物体
     config_objName_coarse = "cube40_4_4";
-    g_solverType = PD;
+    g_solverType = PD_MG;
     FLAGS_log_dir = "../temp/log/";
     config_energyOutputCsv = "../temp/energy.csv";
     config_energyStepInCsv = "../data/120_256iter.csv";
