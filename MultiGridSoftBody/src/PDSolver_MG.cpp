@@ -3,6 +3,8 @@
 #include "global.h"
 
 void PDSolver_MG::interpolate() {
+    static int cnt = 0;
+    LOG(INFO) << "interpolate cnt:" << ++cnt;
     // https://www.iue.tuwien.ac.at/phd/nentchev/node31.html
     m_interpolationIds.resize(m_pdSolverFine->m_tetVertNum * 4, -1);
     m_interpolationWights.resize(m_pdSolverFine->m_tetVertNum * 4, 0);
@@ -50,7 +52,7 @@ void PDSolver_MG::interpolate() {
                 break;
             }
         }
-        assert(found == true);
+        if (!found) LOG(ERROR) << "vIdFine:" << vIdFine << " 没有匹配到粗四面体\n";
     }
     LOG(INFO) << "绑定的细四面体顶点与粗四面体重心之间的最大距离 = " << maxDistance;
 }
@@ -77,45 +79,48 @@ void PDSolver_MG::Init(const vector<int>& tetIdxCoarse, const vector<float> tetV
     int tetVertNumFine = m_pdSolverFine->m_tetVertNum;
 
     float maxDistance = 0;  // 细四面体顶点和粗四面体重心之间的距离最大值，用于验证
-    for (int vIdFine = 0; vIdFine < tetVertNumFine; ++vIdFine) {
-        bool found = false;
-        for (int tIdCoarse = 0; tIdCoarse < tetNumCoarse; ++tIdCoarse) {
-            vector<float> tetVertPosInATet;
-            vector<int> tetVertIdInATet = {tetIdxCoarse[tIdCoarse * 4 + 0], tetIdxCoarse[tIdCoarse * 4 + 1], tetIdxCoarse[tIdCoarse * 4 + 2],
-                                           tetIdxCoarse[tIdCoarse * 4 + 3]};
-            for (int ii = 0; ii < 4; ii++) {
-                int id = tetVertIdInATet[ii];
-                tetVertPosInATet.push_back(tetVertPosCoarse[id * 3 + 0]);
-                tetVertPosInATet.push_back(tetVertPosCoarse[id * 3 + 1]);
-                tetVertPosInATet.push_back(tetVertPosCoarse[id * 3 + 2]);
-            }
-            // https://www.iue.tuwien.ac.at/phd/nentchev/node31.html
-            if (pointInTet(tetVertPosInATet.data(), tetFaceNormalCoarse.data() + tIdCoarse * 12, tetVertPosFine.data() + vIdFine * 3)) {
-                vector<float> lambdas =
-                    barycentricCoordinate(tetVertPosFine.data() + vIdFine * 3, tetCenterCoarse.data() + tIdCoarse * 3, tetFaceAreaCoarse.data() + tIdCoarse * 4,
-                                          tetFaceNormalCoarse.data() + tIdCoarse * 12, tetVolumeCoarse[tIdCoarse]);
-                for (int ii = 0; ii < 4; ++ii) {
-                    m_interpolationIds[vIdFine * 4 + ii] = tetVertIdInATet[ii];
-                    m_interpolationWights[vIdFine * 4 + ii] = lambdas[ii];
-                }
 
-                // test
-                for (int ii = 0; ii < 4; ii++) {
-                    float l = lambdas[ii];
-                    assert(l > -1e-5 && l < 1 + 1e-5);
-                }
-                Point3D p = {tetVertPosFine[vIdFine * 3 + 0], tetVertPosFine[vIdFine * 3 + 1], tetVertPosFine[vIdFine * 3 + 2]};
-                Point3D center = {tetCenterCoarse[tIdCoarse * 3 + 0], tetCenterCoarse[tIdCoarse * 3 + 1], tetCenterCoarse[tIdCoarse * 3 + 2]};
-                Point3D centerP = p - center;
-                float dis = vectorLength(centerP);
-                maxDistance = max(maxDistance, dis);
-                found = true;
-                break;  // 不用继续遍历其他的四面体
-            }
-        }
-        assert(found == true);
-    }
-    LOG(INFO) << "绑定的细四面体顶点与粗四面体重心之间的最大距离 = " << maxDistance;
+    interpolate();
+
+    //for (int vIdFine = 0; vIdFine < tetVertNumFine; ++vIdFine) {
+    //    bool found = false;
+    //    for (int tIdCoarse = 0; tIdCoarse < tetNumCoarse; ++tIdCoarse) {
+    //        vector<float> tetVertPosInATet;
+    //        vector<int> tetVertIdInATet = {tetIdxCoarse[tIdCoarse * 4 + 0], tetIdxCoarse[tIdCoarse * 4 + 1], tetIdxCoarse[tIdCoarse * 4 + 2],
+    //                                       tetIdxCoarse[tIdCoarse * 4 + 3]};
+    //        for (int ii = 0; ii < 4; ii++) {
+    //            int id = tetVertIdInATet[ii];
+    //            tetVertPosInATet.push_back(tetVertPosCoarse[id * 3 + 0]);
+    //            tetVertPosInATet.push_back(tetVertPosCoarse[id * 3 + 1]);
+    //            tetVertPosInATet.push_back(tetVertPosCoarse[id * 3 + 2]);
+    //        }
+    //        // https://www.iue.tuwien.ac.at/phd/nentchev/node31.html
+    //        if (pointInTet(tetVertPosInATet.data(), tetFaceNormalCoarse.data() + tIdCoarse * 12, tetVertPosFine.data() + vIdFine * 3)) {
+    //            vector<float> lambdas =
+    //                barycentricCoordinate(tetVertPosFine.data() + vIdFine * 3, tetCenterCoarse.data() + tIdCoarse * 3, tetFaceAreaCoarse.data() + tIdCoarse * 4,
+    //                                      tetFaceNormalCoarse.data() + tIdCoarse * 12, tetVolumeCoarse[tIdCoarse]);
+    //            for (int ii = 0; ii < 4; ++ii) {
+    //                m_interpolationIds[vIdFine * 4 + ii] = tetVertIdInATet[ii];
+    //                m_interpolationWights[vIdFine * 4 + ii] = lambdas[ii];
+    //            }
+
+    //            // test
+    //            for (int ii = 0; ii < 4; ii++) {
+    //                float l = lambdas[ii];
+    //                assert(l > -1e-5 && l < 1 + 1e-5);
+    //            }
+    //            Point3D p = {tetVertPosFine[vIdFine * 3 + 0], tetVertPosFine[vIdFine * 3 + 1], tetVertPosFine[vIdFine * 3 + 2]};
+    //            Point3D center = {tetCenterCoarse[tIdCoarse * 3 + 0], tetCenterCoarse[tIdCoarse * 3 + 1], tetCenterCoarse[tIdCoarse * 3 + 2]};
+    //            Point3D centerP = p - center;
+    //            float dis = vectorLength(centerP);
+    //            maxDistance = max(maxDistance, dis);
+    //            found = true;
+    //            break;  // 不用继续遍历其他的四面体
+    //        }
+    //    }
+    //    assert(found == true);
+    //}
+    //LOG(INFO) << "绑定的细四面体顶点与粗四面体重心之间的最大距离 = " << maxDistance;
 
     maxDistance = 0;
     int tetVertNumCoarse = m_pdSolverCoarse->m_tetVertNum;
@@ -225,9 +230,9 @@ void PDSolver_MG::Step() {
 
     // 更新绑定的权重
     //runUpdateMapping(); // 会导致四面体反转
-    interpolate();
-    cudaMemcpy(interpolationIds_d, m_interpolationIds.data(), m_pdSolverFine->m_tetVertNum * 4 * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(interpolationWights_d, m_interpolationWights.data(), m_pdSolverFine->m_tetVertNum * 4 * sizeof(float), cudaMemcpyHostToDevice);
+    //interpolate();
+    //cudaMemcpy(interpolationIds_d, m_interpolationIds.data(), m_pdSolverFine->m_tetVertNum * 4 * sizeof(int), cudaMemcpyHostToDevice);
+    //cudaMemcpy(interpolationWights_d, m_interpolationWights.data(), m_pdSolverFine->m_tetVertNum * 4 * sizeof(float), cudaMemcpyHostToDevice);
 
     m_pdSolverCoarse->pdSolverData->runCalculateV(m_pdSolverCoarse->m_dt);
     m_pdSolverFine->pdSolverData->runCalculateV(m_pdSolverFine->m_dt);

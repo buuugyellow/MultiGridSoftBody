@@ -226,7 +226,7 @@ __device__ __host__ float GetVolumn(const Point3D& A, const Point3D& B, const Po
         printf("det is %f, 四面体退化\n", det);
         exit(0);
     }
-    return det;
+    return det / 6.0f;
 }
 
 __device__ __host__ Point3D operator-(const Point3D& a, const Point3D& b) { return {a.x - b.x, a.y - b.y, a.z - b.z}; }
