@@ -116,7 +116,7 @@ __device__ __host__ void GetRotation_D(float F[3][3], float R[3][3]) {
         if (det < 0) III_u = -III_u; // ??? 迷惑行为 III_u == det
 
         if (lambda < 1e-6) printf("[ERROR]lambada = %f, 应该是大于 0 的？\n", lambda);
-        if (-lambda2 + I_c + 2 * III_u / lambda < 1e-6) printf("[ERROR] -lambda2 + I_c + 2 * III_u / lambda = %f\n", -lambda2 + I_c + 2 * III_u / lambda);
+        if (-lambda2 + I_c + 2 * III_u / lambda < 1e-6) printf("[ERROR] -lambda2 + I_c + 2 * III_u / lambda = %f (det = %f)\n", -lambda2 + I_c + 2 * III_u / lambda,det);
         float I_u = lambda + sqrt(-lambda2 + I_c + 2 * III_u / lambda);
         float II_u = (I_u * I_u - I_c) * 0.5;
 
