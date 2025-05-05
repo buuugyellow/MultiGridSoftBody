@@ -70,4 +70,5 @@ public:
     void StepForConvergence();
     void InitVolumeConstraint();
     void SetFixedVert();
+    void RenderOnce();
 };

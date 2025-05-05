@@ -183,17 +183,18 @@ void PDSolver_MG::Step() {
     static float E0 = 0;
     float Ek, Ep, dX, error;
     auto start = std::chrono::high_resolution_clock::now();
-    m_pdSolverFine->StepForConvergence();
+    //m_pdSolverFine->StepForConvergence();
 
     m_pdSolverCoarse->pdSolverData->runCalculateST(m_pdSolverCoarse->m_damping, m_pdSolverCoarse->m_dt, m_pdSolverCoarse->m_gravityX,
                                                    m_pdSolverCoarse->m_gravityY, m_pdSolverCoarse->m_gravityZ);
     m_pdSolverFine->pdSolverData->runCalculateST(m_pdSolverFine->m_damping, m_pdSolverFine->m_dt, m_pdSolverFine->m_gravityX, m_pdSolverFine->m_gravityY,
                                                  m_pdSolverFine->m_gravityZ);
-    m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex, m_pdSolverFine->m_tetInvD3x3,
-                                               m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX);
-    E0 = Ep + Ek;
-    if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
-    fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", 0, Ek + Ep, Ek, Ep, dX, error);
+    m_pdSolverFine->RenderOnce();
+    //m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex, m_pdSolverFine->m_tetInvD3x3,
+    //                                           m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX);
+    //E0 = Ep + Ek;
+    //if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
+    //fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", 0, Ek + Ep, Ek, Ep, dX, error);
 
     // 粗网格迭代到收敛
     float omega = 1.0f;
@@ -206,10 +207,11 @@ void PDSolver_MG::Step() {
 
     // 插值到细网格
     runInterpolate();
-    m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex, m_pdSolverFine->m_tetInvD3x3,
-                                               m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX);
-    if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
-    fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", 1, Ek + Ep, Ek, Ep, dX, error);
+    m_pdSolverFine->RenderOnce();
+    //m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex, m_pdSolverFine->m_tetInvD3x3,
+    //                                           m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX);
+    //if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
+    //fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", 1, Ek + Ep, Ek, Ep, dX, error);
 
     // 细网格迭代到收敛
     omega = 1.0f;
@@ -218,11 +220,11 @@ void PDSolver_MG::Step() {
         m_pdSolverFine->pdSolverData->runCalculateIF(m_pdSolverFine->m_volumnStiffness);
         omega = 4 / (4 - m_pdSolverFine->m_rho * m_pdSolverFine->m_rho * omega);
         m_pdSolverFine->pdSolverData->runcalculatePOS(omega, m_pdSolverFine->m_dt);
-
-        m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex,
-                                                   m_pdSolverFine->m_tetInvD3x3, m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX);
-        if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
-        fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", i + 2, Ek + Ep, Ek, Ep, dX, error);
+        m_pdSolverFine->RenderOnce();
+        //m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex,
+        //                                           m_pdSolverFine->m_tetInvD3x3, m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX);
+        //if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
+        //fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", i + 2, Ek + Ep, Ek, Ep, dX, error);
     }
 
     // 平均到粗网格

@@ -33,6 +33,7 @@ float g_conEk_V2;
 float g_conEp_V2;
 
 SolverType g_solverType;
+bool g_synOrAsy;
 
 Application* g_render;
 Simulator* g_simulator;
@@ -82,7 +83,7 @@ void renderLoop() {
     g_render = Application::Instance();
     string shaderFolder = "../shader/";
     string hdrfile = "env1.hdr";
-    string name = "HepaticTumor";
+    string name = "MultiGridSoftBody";
     g_render->InitRender(hdrfile, shaderFolder, name, doUI);
     // bindRenderObjs(); // 如果这个定义在全局，渲染线程会找不到这个函数
     float ssoaparas[8] = {2.0f, 1.5f, 0.9f, 0.9f, 0.009f, 2.8f};
@@ -105,7 +106,6 @@ void renderLoop() {
                 // g_pointsNormalsUVForRender[i * 9 + 8] = 0.0f;
             }
         }
-        GImGui;
         g_render->UpdateMesh(g_simulator->m_softObject->m_renderObjId, g_simulator->m_tetFaceIdx.size(),
                              g_simulator->m_tetFaceIdx.size() * sizeof(unsigned int), g_simulator->m_tetFaceIdx.data(),
                              g_pointsNormalsUVForRender.size() * sizeof(float), g_pointsNormalsUVForRender.data());
@@ -151,11 +151,40 @@ void fileIO() {
     }
 }
 
+void initRenderAsy() { thread(renderLoop).detach(); }
+
+void initRenderSyn() {
+    g_render = Application::Instance();
+    string shaderFolder = "../shader/";
+    string hdrfile = "env1.hdr";
+    string name = "MultiGridSoftBody";
+    g_render->InitRender(hdrfile, shaderFolder, name, doUI);
+    float ssoaparas[8] = {2.0f, 1.5f, 0.9f, 0.9f, 0.009f, 2.8f};
+    g_render->SetSSAOParas(ssoaparas);
+    g_simulator->m_softObject->m_renderObjId = g_render->CreatePBRObj(g_simulator->m_softObject->m_name, 0.6, 0.5, 0.4, 0.2, 0.3);
+}
+
+__host__ void renderOnce() {
+    for (int i = 0; i < g_pointsNormalsUVForRender.size() / 9; i++) {
+        g_pointsNormalsUVForRender[i * 9 + 0] = g_simulator->m_tetVertPos[i * 3 + 0];
+        g_pointsNormalsUVForRender[i * 9 + 1] = g_simulator->m_tetVertPos[i * 3 + 1];
+        g_pointsNormalsUVForRender[i * 9 + 2] = g_simulator->m_tetVertPos[i * 3 + 2];
+        g_pointsNormalsUVForRender[i * 9 + 3] = g_simulator->m_normal[i * 3 + 0];
+        g_pointsNormalsUVForRender[i * 9 + 4] = g_simulator->m_normal[i * 3 + 1];
+        g_pointsNormalsUVForRender[i * 9 + 5] = g_simulator->m_normal[i * 3 + 2];
+    }
+    g_render->UpdateMesh(g_simulator->m_softObject->m_renderObjId, g_simulator->m_tetFaceIdx.size(), g_simulator->m_tetFaceIdx.size() * sizeof(unsigned int),
+                         g_simulator->m_tetFaceIdx.data(), g_pointsNormalsUVForRender.size() * sizeof(float), g_pointsNormalsUVForRender.data());
+    int ret = g_render->Render();
+    if (ret) LOG(ERROR) << "render error";
+}
+
 void init() {
     config_dataDir = "../data/";
     config_objName = "cube120_12_12";  // 单一物体
     config_objName_coarse = "cube40_4_4";
-    g_solverType = PD_MG;
+    g_synOrAsy = true;
+    g_solverType = PD;
     FLAGS_log_dir = "../temp/log/";
     config_energyOutputCsv = "../temp/energy.csv";
     config_energyStepInCsv = "../data/120_256iter.csv";
@@ -172,8 +201,7 @@ void init() {
     g_pointsNormalsUVForRender.resize(g_simulator->m_tetVertPos.size() * 3);
     g_pointsForRender.resize(g_simulator->m_tetVertPos.size());
     g_normalsForRender.resize(g_simulator->m_tetVertPos.size());
-    thread(renderLoop).detach();
-    LOG(INFO) << "main init 结束";
+    LOG(INFO) << "init 结束";
 }
 
 void run() {
@@ -190,6 +218,12 @@ void run() {
 
 int main() {
     init();
-    run();
+    if (g_synOrAsy) {  // 同步
+        initRenderSyn();
+        while (true) g_simulator->Update();
+    } else { // 异步
+        initRenderAsy();
+        run();
+    }
     return 0;
 }
