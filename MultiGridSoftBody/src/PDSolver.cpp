@@ -139,7 +139,7 @@ void PDSolver::SetFixedVert() {
 }
 
 void PDSolver::Init(const vector<int>& tetIdx, const vector<float> tetVertPos) {
-    m_iterNum = 32;
+    m_iterNum = 16;
     m_iterNumCvg = 128;
     m_dt = 1.0f / 30.0f;
     m_damping = 0.5f;
@@ -194,14 +194,14 @@ void PDSolver::Step() {
     float Ek, Ep, dX, error;
     auto start = std::chrono::high_resolution_clock::now();
 
-    // StepForConvergence();
+    StepForConvergence();
 
     pdSolverData->runCalculateST(m_damping, m_dt, m_gravityX, m_gravityY, m_gravityZ);
-    RenderOnce();
-    //pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, dX);
-    //E0 = Ep + Ek;
-    //if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
-    //fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", 0, Ek + Ep, Ek, Ep, dX, error);
+    //RenderOnce();
+    pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, dX);
+    E0 = Ep + Ek;
+    if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
+    fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", 0, Ek + Ep, Ek, Ep, dX, error);
 
     float omega = 1.0f;
     for (int i = 0; i < m_iterNum; i++) {
@@ -209,15 +209,17 @@ void PDSolver::Step() {
         pdSolverData->runCalculateIF(m_volumnStiffness);
         omega = 4 / (4 - m_rho * m_rho * omega);
         pdSolverData->runcalculatePOS(omega, m_dt);
-        RenderOnce();
-        //pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, dX);
-        //if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
-        //fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", i + 1, Ek + Ep, Ek, Ep, dX, error);
+        //RenderOnce();
+        pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, dX);
+        if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
+        fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", i + 1, Ek + Ep, Ek, Ep, dX, error);
     }
     pdSolverData->runCalculateV(m_dt);
-    pdSolverData->runCpyTetVertForRender();
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     duration_physical = duration.count();
+    fprintf(timeOutputFile, "%d,%f\n", g_stepCnt, duration_physical);
+
+    RenderOnce();
 }

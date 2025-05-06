@@ -19,9 +19,11 @@ using namespace std;
 string config_dataDir;
 string config_objName;  // 单一物体
 string config_objName_coarse;
+string config_timeOutputCsv;
 string config_energyOutputCsv;
 string config_energyStepInCsv;
 string config_energyStepOutCsv;
+FILE* timeOutputFile;
 FILE* energyOutputFile;
 FILE* energyStepFile;           // 每次 step 结束之后的能量，用于记录收敛状态的能量
 bool config_writeOrReadEnergy;  // 读取或者写入收敛能量文件
@@ -117,22 +119,29 @@ void renderLoop() {
 void fileIO() {
     errno_t err = fopen_s(&energyOutputFile, config_energyOutputCsv.c_str(), "w+");
     if (err) {
-        LOG(ERROR) << "打开 csv 文件失败";
+        LOG(ERROR) << "打开 csv 文件失败: " << config_energyOutputCsv.c_str();
     } else {
         fprintf(energyOutputFile, "iter,Energy,Ek,Ep,deltaX,error\n");
+    }
+
+    err = fopen_s(&timeOutputFile, config_timeOutputCsv.c_str(), "w+");
+    if (err) {
+        LOG(ERROR) << "打开 csv 文件失败: " << config_timeOutputCsv.c_str();
+    } else {
+        fprintf(timeOutputFile, "step,duration\n");
     }
     
     if (config_writeOrReadEnergy) {
         err = fopen_s(&energyStepFile, config_energyStepOutCsv.c_str(), "w+");
         if (err) {
-            LOG(ERROR) << "打开 csv 文件失败";
+            LOG(ERROR) << "打开 csv 文件失败: " << config_energyStepOutCsv.c_str();
         } else {
             fprintf(energyStepFile, "Energy,Ek,Ep\n");
         }
     } else {
         err = fopen_s(&energyStepFile, config_energyStepInCsv.c_str(), "r");
         if (err) {
-            LOG(ERROR) << "打开 csv 文件失败";
+            LOG(ERROR) << "打开 csv 文件失败: " << config_energyStepInCsv.c_str();
         } else {
             char row[80];
             char* ptr = NULL;
@@ -186,6 +195,7 @@ void init() {
     g_synOrAsy = true;
     g_solverType = PD;
     FLAGS_log_dir = "../temp/log/";
+    config_timeOutputCsv = "../temp/time.csv";
     config_energyOutputCsv = "../temp/energy.csv";
     config_energyStepInCsv = "../data/120_256iter.csv";
     config_energyStepOutCsv = "../temp/energyStepOut.csv";

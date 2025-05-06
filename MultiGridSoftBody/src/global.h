@@ -1,5 +1,5 @@
 #pragma once
-#define PRINT_CUDA_ERROR
+//#define PRINT_CUDA_ERROR
 
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -13,6 +13,7 @@ using namespace std;
 extern string config_objName;
 extern string config_objName_coarse;
 extern string config_dataDir;
+extern FILE* timeOutputFile;
 extern FILE* energyOutputFile;
 extern FILE* energyStepFile;
 extern bool config_writeOrReadEnergy;

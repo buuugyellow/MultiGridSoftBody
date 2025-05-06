@@ -62,7 +62,18 @@ void Simulator::Init() {
 }
 
 void Simulator::Update() {
-    if (g_stepCnt++ > 300) return;
+    if (g_stepCnt > 240) {
+        if (timeOutputFile) {
+            fclose(timeOutputFile);
+            timeOutputFile = nullptr;
+        }
+        if (energyOutputFile) {
+            fclose(energyOutputFile);
+            energyOutputFile = nullptr;
+        }
+        return;
+    }
+    g_stepCnt++;
     cout << "step frame " << g_stepCnt << endl;
 
     switch (g_solverType) {

@@ -189,7 +189,7 @@ void PDSolver_MG::Step() {
                                                    m_pdSolverCoarse->m_gravityY, m_pdSolverCoarse->m_gravityZ);
     m_pdSolverFine->pdSolverData->runCalculateST(m_pdSolverFine->m_damping, m_pdSolverFine->m_dt, m_pdSolverFine->m_gravityX, m_pdSolverFine->m_gravityY,
                                                  m_pdSolverFine->m_gravityZ);
-    m_pdSolverFine->RenderOnce();
+    //m_pdSolverFine->RenderOnce();
     //m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex, m_pdSolverFine->m_tetInvD3x3,
     //                                           m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX);
     //E0 = Ep + Ek;
@@ -198,7 +198,7 @@ void PDSolver_MG::Step() {
 
     // 粗网格迭代到收敛
     float omega = 1.0f;
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 10; i++) {
         m_pdSolverCoarse->pdSolverData->runClearTemp();
         m_pdSolverCoarse->pdSolverData->runCalculateIF(m_pdSolverCoarse->m_volumnStiffness);
         omega = 4 / (4 - m_pdSolverCoarse->m_rho * m_pdSolverCoarse->m_rho * omega);
@@ -207,7 +207,7 @@ void PDSolver_MG::Step() {
 
     // 插值到细网格
     runInterpolate();
-    m_pdSolverFine->RenderOnce();
+    //m_pdSolverFine->RenderOnce();
     //m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex, m_pdSolverFine->m_tetInvD3x3,
     //                                           m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX);
     //if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
@@ -215,12 +215,12 @@ void PDSolver_MG::Step() {
 
     // 细网格迭代到收敛
     omega = 1.0f;
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 19; i++) {
         m_pdSolverFine->pdSolverData->runClearTemp();
         m_pdSolverFine->pdSolverData->runCalculateIF(m_pdSolverFine->m_volumnStiffness);
         omega = 4 / (4 - m_pdSolverFine->m_rho * m_pdSolverFine->m_rho * omega);
         m_pdSolverFine->pdSolverData->runcalculatePOS(omega, m_pdSolverFine->m_dt);
-        m_pdSolverFine->RenderOnce();
+        //m_pdSolverFine->RenderOnce();
         //m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex,
         //                                           m_pdSolverFine->m_tetInvD3x3, m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX);
         //if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
@@ -231,7 +231,7 @@ void PDSolver_MG::Step() {
     runAverage();
 
     // 更新绑定的权重
-    //runUpdateMapping(); // 会导致四面体反转
+    runUpdateMapping(); // 会导致四面体反转
     //interpolate();
     //cudaMemcpy(interpolationIds_d, m_interpolationIds.data(), m_pdSolverFine->m_tetVertNum * 4 * sizeof(int), cudaMemcpyHostToDevice);
     //cudaMemcpy(interpolationWights_d, m_interpolationWights.data(), m_pdSolverFine->m_tetVertNum * 4 * sizeof(float), cudaMemcpyHostToDevice);
@@ -239,9 +239,11 @@ void PDSolver_MG::Step() {
     m_pdSolverCoarse->pdSolverData->runCalculateV(m_pdSolverCoarse->m_dt);
     m_pdSolverFine->pdSolverData->runCalculateV(m_pdSolverFine->m_dt);
 
-    m_pdSolverFine->pdSolverData->runCpyTetVertForRender();
-
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     duration_physical = duration.count();
+    fprintf(timeOutputFile, "%d,%f\n", g_stepCnt, duration_physical);
+
+    // m_pdSolverFine->pdSolverData->runCpyTetVertForRender();
+    m_pdSolverFine->RenderOnce();
 }
