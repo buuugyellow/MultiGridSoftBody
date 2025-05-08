@@ -31,6 +31,12 @@ public:
 
 	void InitRender(std::string& hdrfile, std::string& shaderfolder, std::string& name, void(*doUICallBack)());
 
+	void UpdatePartical(int num, float* vert);
+
+	void SetShowPartical(bool show);
+
+	void SetParticalRadius(float r);
+
 	int Render();
 
 	void ShutDown();

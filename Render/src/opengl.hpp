@@ -7,6 +7,19 @@
 #include "glad/include/glad/glad.h"
 #include "glm/mat4x4.hpp"
 
+#if defined(NDEBUG)
+#define GLVerify(x) x
+#else
+#define GLVerify(x)                       \
+    {                                     \
+        x;                                \
+        GLAssert(#x, __LINE__, __FILE__); \
+    }
+void GLAssert(const char* msg, long line, const char* file);
+#endif
+
+void GLAssert(const char* msg, long line, const char* file);
+
 struct GLFWwindow;
 
 struct ViewSettings
@@ -169,6 +182,19 @@ struct ShadingUB
 	glm::vec4 eyePosition;
 };
 
+struct SphereRenderBuffers {
+    SphereRenderBuffers(GLint numParticles = 0) : mPositionVBO(0), mPositionVAO(0) { mNumParticles = numParticles; }
+    ~SphereRenderBuffers() {
+        glDeleteVertexArrays(1, &mPositionVAO);
+        glDeleteBuffers(1, &mPositionVBO);
+    }
+
+    GLint mNumParticles;
+    GLuint mPositionVBO;
+    GLuint mPositionVAO;
+    glm::mat4 mTransform = glm::mat4(1.0f);
+};
+
 class Scene
 {
 public:
@@ -193,6 +219,7 @@ public:
 	GLuint m_gbufferProgram;
 	GLuint m_ssaoProgram;
 	GLuint m_aoblurProgram;
+    GLuint m_sphereProgram;
 
 	std::vector<std::shared_ptr<Mesh>> m_meshes;
 
@@ -214,6 +241,8 @@ public:
 	float m_pureWhite = 1.0f;
 	float m_tonemapPara[4];//exposure  gamma pureWhite
 	float m_ssaoPara[4];//raidus bias
+
+	glm::vec3 m_colors[16];
 
 public:
 
@@ -246,8 +275,14 @@ public:
 	void shutdown();
 	void render(GLFWwindow* window, const ViewSettings& view, const SceneSettings& scene);
 	void resize(int w, int h);
+    void InitSphereBuffer(int pnum);
 	void doUI();
 public:
+    static void CreateSphereRenderBuffers(SphereRenderBuffers& buffer);
+    static void UpdateBuffers(SphereRenderBuffers& buffer, float* particles, int* phase);
+    static void UpdateBuffersConst(SphereRenderBuffers& buffer, float* particles, int* phase);
+    static void UpdateBuffers(SphereRenderBuffers& buffer, float* particles, int* phase, int* indices, int numIndices);
+
 	static GLuint compileShader(const std::string& filename, GLenum type);
 	static GLuint linkProgram(std::initializer_list<GLuint> shaders);
 
@@ -283,18 +318,21 @@ public:
 	FrameBuffer m_gbuffer;
 	FrameBuffer m_postbuffer;
 	FrameBuffer m_aoblurbuffer;
-
+    FrameBuffer m_spherebuffer;
 	FrameBuffer m_framebuffer;
 	FrameBuffer m_resolveFramebuffer;
-	
+    SphereRenderBuffers m_particleRenderBuffers;  // ¶¥µã
 
 	std::shared_ptr< Scene >  m_sceneobject;
 	bool m_doUI = true;
 	bool m_showGraphicPara = false;
 	bool m_showFlexPara = false;
 	std::string m_name = "test";
+    float m_particleR = 0.05;
+    bool m_showParticle = true;
 	void (*doUICallBack)();
 };
 uint32_t loadProgram(std::string glslpath, bool forcenew = false);
 uint32_t loadProgramFile(std::string vertpath, std::string fgpath);
+uint32_t loadProgram(std::string vertstr, std::string fragstr, std::string geostr);
 uint32_t loadProgram(std::string vertstr, std::string fragstr, std::string geostr);

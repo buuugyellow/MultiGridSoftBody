@@ -71,6 +71,7 @@ void Simulator::Update() {
             fclose(energyOutputFile);
             energyOutputFile = nullptr;
         }
+        renderOnce();
         return;
     }
     g_stepCnt++;

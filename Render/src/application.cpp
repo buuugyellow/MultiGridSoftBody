@@ -118,6 +118,15 @@ void Application::InitRender(std::string& hdrfile, std::string& shaderfolder, st
 	glLineWidth(3);
 }
 
+void Application::UpdatePartical(int num, float* vert) { 
+	m_renderer->m_particleRenderBuffers.mNumParticles = num;
+    m_renderer->UpdateBuffers(m_renderer->m_particleRenderBuffers, vert, nullptr);
+}
+
+void Application::SetShowPartical(bool show) { m_renderer->m_showParticle = show; }
+
+void Application::SetParticalRadius(float r) { m_renderer->m_particleR = r; }
+
 void Application::SetTransparentColor(int objId, float r, float g, float b, float a) {
 	if (m_renderer == nullptr)
 		return;

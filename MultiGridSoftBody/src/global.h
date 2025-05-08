@@ -33,6 +33,8 @@ extern float g_conEp_V2;
 enum SolverType { PD, PD_MG };
 extern SolverType g_solverType;
 extern double duration_physical;
+extern bool g_UIShowParticle;
+extern float g_UIParticleR;
 
 __device__ __host__ struct Point3D {
     float x, y, z;

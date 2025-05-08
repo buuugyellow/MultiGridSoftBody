@@ -184,6 +184,7 @@ __host__ void renderOnce() {
     }
     g_render->UpdateMesh(g_simulator->m_softObject->m_renderObjId, g_simulator->m_tetFaceIdx.size(), g_simulator->m_tetFaceIdx.size() * sizeof(unsigned int),
                          g_simulator->m_tetFaceIdx.data(), g_pointsNormalsUVForRender.size() * sizeof(float), g_pointsNormalsUVForRender.data());
+    g_render->UpdatePartical(g_simulator->m_tetVertPos.size() / 3, g_simulator->m_tetVertPos.data());
     int ret = g_render->Render();
     if (ret) LOG(ERROR) << "render error";
 }

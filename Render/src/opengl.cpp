@@ -22,6 +22,43 @@
 #include "glutils.hpp"
 #include "ImguiHelper.hpp"
 
+void GLAssert(const char* msg, long line, const char* file) {
+    struct glError {
+        GLenum code;
+        const char* name;
+    };
+
+    static const glError errors[] = {
+        {GL_NO_ERROR, "No Error"},
+        {GL_INVALID_ENUM, "Invalid Enum"},
+        {GL_INVALID_VALUE, "Invalid Value"},
+        {GL_INVALID_OPERATION, "Invalid Operation"},
+#if OGL1
+        {GL_STACK_OVERFLOW, "Stack Overflow"},
+        {GL_STACK_UNDERFLOW, "Stack Underflow"},
+        {GL_OUT_OF_MEMORY, "Out Of Memory"}
+#endif
+    };
+
+    GLenum e = glGetError();
+
+    if (e == GL_NO_ERROR) {
+        return;
+    } else {
+        const char* errorName = "Unknown error";
+
+        // find error message
+        for (uint32_t i = 0; i < sizeof(errors) / sizeof(glError); i++) {
+            if (errors[i].code == e) {
+                errorName = errors[i].name;
+            }
+        }
+
+        printf("OpenGL: %s - error %s in %s at line %d\n", msg, errorName, file, int(line));
+        assert(0);
+    }
+}
+
 
 GLFWwindow* Renderer::initialize(int width, int height, int maxSamples)
 {
@@ -62,6 +99,7 @@ GLFWwindow* Renderer::initialize(int width, int height, int maxSamples)
 
 	const int samples = glm::min(maxSamples, maxSupportedSamples);
 	m_framebuffer = createFrameBuffer(width, height, samples, { GL_RGBA16F }, GL_DEPTH_COMPONENT32);
+    m_spherebuffer = createFrameBuffer(width, height, samples, {GL_RGBA16F}, GL_DEPTH_COMPONENT32);
 	if(samples > 0) {
 		m_resolveFramebuffer = createFrameBuffer(width, height, 0, { GL_RGBA16F }, GL_NONE);
 	}
@@ -78,6 +116,8 @@ GLFWwindow* Renderer::initialize(int width, int height, int maxSamples)
 	m_postbuffer = createFrameBuffer(width, height, 0, { GL_RGBA8 }, GL_NONE);
 
 	m_aoblurbuffer = createFrameBuffer(width, height, 0, { GL_RGBA8 }, GL_NONE);
+
+	CreateSphereRenderBuffers(m_particleRenderBuffers);
 
 	std::printf("OpenGL 4.5 Renderer [%s]\n", glGetString(GL_RENDERER));
 
@@ -391,6 +431,40 @@ GLuint Renderer::createUniformBuffer(const void* data, size_t size)
 	glCreateBuffers(1, &ubo);
 	glNamedBufferStorage(ubo, size, data, GL_DYNAMIC_STORAGE_BIT);
 	return ubo;
+}
+
+void Renderer::CreateSphereRenderBuffers(SphereRenderBuffers& buffer) {
+    glGenVertexArrays(1, &buffer.mPositionVAO);
+    // vbos
+    GLVerify(glGenBuffers(1, &buffer.mPositionVBO));
+    GLVerify(glBindVertexArray(buffer.mPositionVAO));
+    GLVerify(glBindBuffer(GL_ARRAY_BUFFER, buffer.mPositionVBO));
+    GLVerify(glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 3 * 100000, 0, GL_DYNAMIC_DRAW));
+
+    GLVerify(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0));
+    GLVerify(glEnableVertexAttribArray(0));
+}
+
+void Renderer::UpdateBuffers(SphereRenderBuffers& buffer, float* particles, int* phase, int* indices, int numIndices) {
+    // regular particles
+    if (particles) {
+        GLVerify(glBindBuffer(GL_ARRAY_BUFFER, buffer.mPositionVBO));
+        GLVerify(glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 3 * buffer.mNumParticles, particles, GL_DYNAMIC_DRAW));
+    }
+}
+
+void Renderer::UpdateBuffers(SphereRenderBuffers& buffer, float* particles, int* phase) {
+    if (particles) {
+        GLVerify(glBindBuffer(GL_ARRAY_BUFFER, buffer.mPositionVBO));
+        GLVerify(glBufferData(GL_ARRAY_BUFFER, buffer.mNumParticles * sizeof(float) * 3, particles, GL_DYNAMIC_DRAW));
+    }
+}
+
+void Renderer::UpdateBuffersConst(SphereRenderBuffers& buffer, float* particles, int* phase) {
+    if (particles) {
+        GLVerify(glBindBuffer(GL_ARRAY_BUFFER, buffer.mPositionVBO));
+        GLVerify(glBufferSubData(GL_ARRAY_BUFFER, 0, buffer.mNumParticles * sizeof(float) * 3, particles));
+    }
 }
 
 #if _DEBUG

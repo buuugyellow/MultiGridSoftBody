@@ -173,6 +173,26 @@
     <ClCompile Include="src\pystring.cpp" />
     <ClCompile Include="src\StringHelper.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\shader\basiccolor.glsl" />
+    <None Include="..\shader\equirect2cube_cs.glsl" />
+    <None Include="..\shader\gbuffer.glsl" />
+    <None Include="..\shader\gtao.glsl" />
+    <None Include="..\shader\irmap_cs.glsl" />
+    <None Include="..\shader\matcap.glsl" />
+    <None Include="..\shader\pbr_fs.glsl" />
+    <None Include="..\shader\pbr_vs.glsl" />
+    <None Include="..\shader\phong.glsl" />
+    <None Include="..\shader\skybox_fs.glsl" />
+    <None Include="..\shader\skybox_vs.glsl" />
+    <None Include="..\shader\spbrdf_cs.glsl" />
+    <None Include="..\shader\sphere.glsl" />
+    <None Include="..\shader\spmap_cs.glsl" />
+    <None Include="..\shader\ssao.glsl" />
+    <None Include="..\shader\ssao_blur.glsl" />
+    <None Include="..\shader\tonemap_fs.glsl" />
+    <None Include="..\shader\tonemap_vs.glsl" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

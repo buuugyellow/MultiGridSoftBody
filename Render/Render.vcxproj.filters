@@ -126,4 +126,60 @@
       <Filter>3rd</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\shader\basiccolor.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\shader\equirect2cube_cs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\shader\gbuffer.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\shader\gtao.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\shader\irmap_cs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\shader\matcap.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\shader\pbr_fs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\shader\pbr_vs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\shader\phong.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\shader\skybox_fs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\shader\skybox_vs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\shader\spbrdf_cs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\shader\sphere.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\shader\spmap_cs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\shader\ssao.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\shader\ssao_blur.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\shader\tonemap_fs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="..\shader\tonemap_vs.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+  </ItemGroup>
 </Project>

@@ -141,6 +141,7 @@ Scene::~Scene()
 
 void Scene::initialize()
 {
+    m_colors[0] = glm::vec3(0.0, 0.0, 1.0);
 	m_blurpara = glm::vec3(2, 1.5, 0.9);
 	m_ssaoPara[0] = 0.9f;
 	m_ssaoPara[1] = 0.009f;
@@ -271,7 +272,7 @@ void Scene::initialize()
 	glFinish();
 
 	m_gbufferProgram = loadProgram(m_shaderFolder + "gbuffer.glsl");
-
+    m_sphereProgram = loadProgram(m_shaderFolder + "sphere.glsl");
 
 	m_ssaoProgram = loadProgram(m_shaderFolder + "ssao.glsl");
 

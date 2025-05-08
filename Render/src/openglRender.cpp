@@ -128,6 +128,42 @@ void Renderer::render(GLFWwindow* window, const ViewSettings& view, const SceneS
 	m_sceneobject->drawTransparent(view.camera);
 	glDisable(GL_BLEND);
 
+
+	if (m_sceneobject->m_sphereProgram >= 0 && m_showParticle) {
+        glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer.id);
+        glm::vec3 lightDir;
+        lightDir.x = 1;
+        lightDir.y = 1;
+        lightDir.z = 1;
+        lightDir.x = lightDir.x / lightDir.length();
+        lightDir.y = lightDir.y / lightDir.length();
+        lightDir.z = lightDir.z / lightDir.length();
+        float fov = glm::radians(45.0f);
+
+        float screenHeight = view.camera->getScreenSize().x;
+        float screenWidth = view.camera->getScreenSize().y;
+        float screenAspect = screenWidth / screenHeight;
+        glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+        GLVerify(glUseProgram(m_sceneobject->m_sphereProgram));
+        GLVerify(glUniform1f(glGetUniformLocation(m_sceneobject->m_sphereProgram, "pointRadius"), m_particleR));
+        GLVerify(glUniform1f(glGetUniformLocation(m_sceneobject->m_sphereProgram, "pointScale"), screenWidth / screenAspect * (1.0f / (tanf(fov * 0.5f)))));
+        GLVerify(glUniform3fv(glGetUniformLocation(m_sceneobject->m_sphereProgram, "colors"), 16, (float*)&m_sceneobject->m_colors[0]));
+        GLint uLightDir = glGetUniformLocation(m_sceneobject->m_sphereProgram, "lightDir");
+        glUniform3fv(uLightDir, 1, (float*)&lightDir);
+        GLint model_location = glGetUniformLocation(m_sceneobject->m_sphereProgram, "Model");
+        if (model_location != -1) {
+            glUniformMatrix4fv(model_location, 1, false, &m_particleRenderBuffers.mTransform[0][0]);
+        }
+
+        GLVerify(glUniformMatrix4fv(glGetUniformLocation(m_sceneobject->m_sphereProgram, "ProjectionMatrix"), 1, false, &projectionMatrix[0][0]));
+        GLVerify(glUniformMatrix4fv(glGetUniformLocation(m_sceneobject->m_sphereProgram, "ModelViewMatrix"), 1, false, &viewMatrix[0][0]));
+
+        glBindVertexArray(m_particleRenderBuffers.mPositionVAO);
+        glDrawArrays(GL_POINTS, 0, m_particleRenderBuffers.mNumParticles);
+        glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
+    }
+
+
 	// Resolve multisample framebuffer.
 	resolveFramebuffer(m_framebuffer, m_resolveFramebuffer);
 
@@ -204,6 +240,11 @@ void Renderer::render(GLFWwindow* window, const ViewSettings& view, const SceneS
 		doUI();
 }
 
+void Renderer::InitSphereBuffer(int pnum) {
+    m_particleRenderBuffers.mNumParticles = pnum;
+    CreateSphereRenderBuffers(m_particleRenderBuffers);
+}
+
 void Renderer::resize(int w, int h)
 {
 	if (w < 10 || h < 10)
@@ -215,12 +256,14 @@ void Renderer::resize(int w, int h)
 	deleteFrameBuffer(m_gbuffer);
 	deleteFrameBuffer(m_postbuffer);
 	deleteFrameBuffer(m_aoblurbuffer);
+    deleteFrameBuffer(m_spherebuffer);
 
 	GLint maxSupportedSamples;
 	glGetIntegerv(GL_MAX_SAMPLES, &maxSupportedSamples);
 
 	const int samples = glm::min(max_sample_, maxSupportedSamples);
 	m_framebuffer = createFrameBuffer(w, h, samples, { GL_RGBA16F }, GL_DEPTH_COMPONENT32);
+    m_spherebuffer = createFrameBuffer(w, h, samples, {GL_RGBA16F}, GL_DEPTH_COMPONENT32);
 	if (samples > 0) {
 		m_resolveFramebuffer = createFrameBuffer(w, h, 0, { GL_RGBA16F }, GL_NONE);
 	}
