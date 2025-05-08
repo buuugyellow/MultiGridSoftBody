@@ -50,6 +50,7 @@ __device__ __host__ void MatrixProduct_3_D(const float* A, const float* B, float
 __device__ __host__ void MatrixSubstract_3_D(float* A, float* B, float* R);                      // R=A-B
 __device__ __host__ void MatrixProduct_D(float* A, float* B, float* R, int nx, int ny, int nz);  // R=A*B
 __device__ __host__ void GetRotation_D(float F[3][3], float R[3][3]);
+__device__ __host__ void GetRotation_D(float F[3][3], float R[3][3], float& deltaF);
 __device__ __host__ Point3D operator-(const Point3D& a, const Point3D& b);                                     // 向量减法
 __device__ __host__ Point3D operator+(const Point3D& a, const Point3D& b);                                     // 向量加法
 __device__ __host__ Point3D operator/(const Point3D& a, float b);                                              // 标量除法

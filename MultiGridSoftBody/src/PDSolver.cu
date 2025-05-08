@@ -1,8 +1,9 @@
-#include "global.h"
-
 #include <math.h>
 #include <stdio.h>
+
 #include <memory>
+
+#include "global.h"
 
 void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
                         float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h) {
@@ -344,7 +345,8 @@ __global__ void updateMapping(int tetVertNumFine, float* tetVertPosFine, int* in
     interpolationWights[threadid * 4 + 3] = weights[3];
 }
 
-void PDSolver_MG::runUpdateMapping() { int threadNum = 512;
+void PDSolver_MG::runUpdateMapping() {
+    int threadNum = 512;
     int blockNum = (m_pdSolverFine->m_tetVertNum + threadNum - 1) / threadNum;
     updateMapping<<<blockNum, threadNum>>>(m_pdSolverFine->m_tetVertNum, m_pdSolverFine->pdSolverData->tetVertPos_d, interpolationIds_d, interpolationWights_d,
                                            m_pdSolverCoarse->pdSolverData->tetVertPos_d);
@@ -376,7 +378,7 @@ void PDSolverData::runTestConvergence(int iter) {
 }
 
 void PDSolverData::runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex, const vector<float>& m_tetInvD3x3,
-                                const vector<float>& m_tetVolume, float m_volumnStiffness, float& Ek, float& Ep, float& dX) {
+                                const vector<float>& m_tetVolume, float m_volumnStiffness, float& Ek, float& Ep, float& dX, bool calEveryVertEp) {
     vector<float> tetVertPos_h(tetVertNum * 3);
     vector<float> tetVertPos_old_h(tetVertNum * 3);
     vector<float> tetVertPos_prev_h(tetVertNum * 3);
@@ -385,6 +387,10 @@ void PDSolverData::runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, 
     cudaMemcpy(tetVertPos_prev_h.data(), tetVertPos_prev_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
 
     Ek = Ep = dX = 0;
+    float maxEp = -FLT_MAX;
+    float minEp = FLT_MAX;
+    if (calEveryVertEp) assert(g_simulator->m_tetVertEp.size() == tetVertNum);
+    if (calEveryVertEp) fill(g_simulator->m_tetVertEp.begin(), g_simulator->m_tetVertEp.end(), 0);
 
     // 计算 deltaX, Ek
     for (int i = 0; i < tetVertNum; i++) {
@@ -434,7 +440,8 @@ void PDSolverData::runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, 
 
         // 从F中分解出R（直接搬运，这个算法太复杂了）
         float R[9];
-        GetRotation_D((float(*)[3])F, (float(*)[3])R);  // 转化为数组指针，即对应二维数组的形参要求
+        float deltaF;
+        GetRotation_D((float(*)[3])F, (float(*)[3])R, deltaF);  // 转化为数组指针，即对应二维数组的形参要求
 
         double e = 0;
         for (int i = 0; i < 9; i++) {
@@ -443,20 +450,36 @@ void PDSolverData::runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, 
         e = e * m_tetVolume[i] * m_volumnStiffness / 2;
 
         Ep += e;
-    }
+        if (calEveryVertEp) {
+            if (deltaF < 1) e = -e;
+            g_simulator->m_tetVertEp[vIndex0] += e / 4.0f;
+            g_simulator->m_tetVertEp[vIndex1] += e / 4.0f;
+            g_simulator->m_tetVertEp[vIndex2] += e / 4.0f;
+            g_simulator->m_tetVertEp[vIndex3] += e / 4.0f;
 
-    //float error = 0;
-    //if (config_writeOrReadEnergy) {  // 写收敛时的能量
-    //    if (stepEnd) fprintf(energyStepFile, "%f,%f,%f\n", Ek + Ep, Ek, Ep);
-    //} else {  // 读收敛时的能量，并且计算误差
-    //    static float E0;
-    //    if (iterBegin) E0 = Ek + Ep;
-    //    if (g_stepCnt < 200) {
-    //        float E_convergence = g_conEnergy[g_stepCnt - 1];
-    //        float Ek_convergence;
-    //        float Ep_convergence;
-    //        error = (Ek + Ep - E_convergence) / (E0 - E_convergence);
-    //    }
-    //}
-    //fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", iter, Ek + Ep, Ek, Ep, dX, error);
+            maxEp = max(maxEp, g_simulator->m_tetVertEp[vIndex0]);
+            minEp = min(minEp, g_simulator->m_tetVertEp[vIndex0]);
+            maxEp = max(maxEp, g_simulator->m_tetVertEp[vIndex1]);
+            minEp = min(minEp, g_simulator->m_tetVertEp[vIndex1]);
+            maxEp = max(maxEp, g_simulator->m_tetVertEp[vIndex2]);
+            minEp = min(minEp, g_simulator->m_tetVertEp[vIndex2]);
+            maxEp = max(maxEp, g_simulator->m_tetVertEp[vIndex3]);
+            minEp = min(minEp, g_simulator->m_tetVertEp[vIndex3]);
+        }
+    }
+    printf("maxEp = %f, minEp = %f\n", maxEp, minEp);
+    // float error = 0;
+    // if (config_writeOrReadEnergy) {  // 写收敛时的能量
+    //     if (stepEnd) fprintf(energyStepFile, "%f,%f,%f\n", Ek + Ep, Ek, Ep);
+    // } else {  // 读收敛时的能量，并且计算误差
+    //     static float E0;
+    //     if (iterBegin) E0 = Ek + Ep;
+    //     if (g_stepCnt < 200) {
+    //         float E_convergence = g_conEnergy[g_stepCnt - 1];
+    //         float Ek_convergence;
+    //         float Ep_convergence;
+    //         error = (Ek + Ep - E_convergence) / (E0 - E_convergence);
+    //     }
+    // }
+    // fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", iter, Ek + Ep, Ek, Ep, dX, error);
 }

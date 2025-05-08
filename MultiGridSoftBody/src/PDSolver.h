@@ -35,7 +35,7 @@ struct PDSolverData {
     void runSaveVel();
     void runTestConvergence(int iter);
     void runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex, const vector<float>& m_tetInvD3x3,
-                      const vector<float>& m_tetVolume, float m_volumnStiffness, float& Ek, float& Ep, float& dX);
+                      const vector<float>& m_tetVolume, float m_volumnStiffness, float& Ek, float& Ep, float& dX, bool calEveryVertEp = false);
 };
 
 class PDSolver {

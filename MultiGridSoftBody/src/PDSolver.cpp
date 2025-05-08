@@ -209,10 +209,11 @@ void PDSolver::Step() {
         pdSolverData->runCalculateIF(m_volumnStiffness);
         omega = 4 / (4 - m_rho * m_rho * omega);
         pdSolverData->runcalculatePOS(omega, m_dt);
-        //RenderOnce();
-        //pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, dX);
+        
+        //pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, dX, true);
         //if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
         //fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", i + 1, Ek + Ep, Ek, Ep, dX, error);
+        //RenderOnce();
     }
     pdSolverData->runCalculateV(m_dt);
 
@@ -221,5 +222,6 @@ void PDSolver::Step() {
     duration_physical = duration.count();
     fprintf(timeOutputFile, "%d,%f\n", g_stepCnt, duration_physical);
 
+    pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, dX, true);
     RenderOnce();
 }

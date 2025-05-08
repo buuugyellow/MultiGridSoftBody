@@ -72,7 +72,7 @@ __device__ __host__ void MatrixProduct_D(float* A, float* B, float* R, int nx, i
             for (int k = 0; k < ny; k++) R[i * nz + j] += A[i * ny + k] * B[k * nz + j];
 }
 
-__device__ __host__ void GetRotation_D(float F[3][3], float R[3][3]) {
+__device__ __host__ void GetRotation_D(float F[3][3], float R[3][3], float& deltaF) {
     float C[3][3];
     memset(&C[0][0], 0, sizeof(float) * 9);
     for (int i = 0; i < 3; i++)
@@ -87,36 +87,38 @@ __device__ __host__ void GetRotation_D(float F[3][3], float R[3][3]) {
 
     float det = F[0][0] * F[1][1] * F[2][2] + F[0][1] * F[1][2] * F[2][0] + F[1][0] * F[2][1] * F[0][2] - F[0][2] * F[1][1] * F[2][0] -
                 F[0][1] * F[1][0] * F[2][2] - F[0][0] * F[1][2] * F[2][1];
+    deltaF = det;
 
     float I_c = C[0][0] + C[1][1] + C[2][2];
     float I_c2 = I_c * I_c;
     float II_c = 0.5 * (I_c2 - C2[0][0] - C2[1][1] - C2[2][2]);
     float III_c = det * det;
-    float k = I_c2 - 3 * II_c; // k 是一个平方和，大于等于 0 
+    float k = I_c2 - 3 * II_c;  // k 是一个平方和，大于等于 0
 
     float inv_U[3][3];
-    if (k < 1e-6f) { // k == 0
-        if (I_c < 1e-6) printf("[ERROR]I_c = %f, 退化成一个点？\n", I_c); // I_c == 0 <=> F = {0}
+    if (k < 1e-6f) {                                                       // k == 0
+        if (I_c < 1e-6) printf("[ERROR]I_c = %f, 退化成一个点？\n", I_c);  // I_c == 0 <=> F = {0}
         float inv_lambda = 1 / sqrt(I_c / 3);
         memset(inv_U, 0, sizeof(float) * 9);
         inv_U[0][0] = inv_lambda;
         inv_U[1][1] = inv_lambda;
         inv_U[2][2] = inv_lambda;
-    } else { // k > 0
+    } else {  // k > 0
         float l = I_c * (I_c * I_c - 4.5 * II_c) + 13.5 * III_c;
         float k_root = sqrt(k);
         float value = l / (k * k_root);
         if (value < -1.0) value = -1.0;
         if (value > 1.0) value = 1.0;
         float phi = acos(value);
-        float lambda2 = (I_c + 2 * k_root * cos(phi / 3)) / 3.0; // phi in [0, pi], phi/3 in [0, pi/3], cos > 0
+        float lambda2 = (I_c + 2 * k_root * cos(phi / 3)) / 3.0;  // phi in [0, pi], phi/3 in [0, pi/3], cos > 0
         float lambda = sqrt(lambda2);
 
         float III_u = sqrt(III_c);
-        if (det < 0) III_u = -III_u; // ??? 迷惑行为 III_u == det
+        if (det < 0) III_u = -III_u;  // ??? 迷惑行为 III_u == det
 
         if (lambda < 1e-6) printf("[ERROR]lambada = %f, 应该是大于 0 的？\n", lambda);
-        if (-lambda2 + I_c + 2 * III_u / lambda < 1e-6) printf("[ERROR] -lambda2 + I_c + 2 * III_u / lambda = %f (det = %f)\n", -lambda2 + I_c + 2 * III_u / lambda,det);
+        if (-lambda2 + I_c + 2 * III_u / lambda < 1e-6)
+            printf("[ERROR] -lambda2 + I_c + 2 * III_u / lambda = %f (det = %f)\n", -lambda2 + I_c + 2 * III_u / lambda, det);
         float I_u = lambda + sqrt(-lambda2 + I_c + 2 * III_u / lambda);
         float II_u = (I_u * I_u - I_c) * 0.5;
 
@@ -137,7 +139,7 @@ __device__ __host__ void GetRotation_D(float F[3][3], float R[3][3]) {
         for (int i = 0; i < 3; i++)
             for (int j = 0; j < 3; j++) U[i][j] += factor * C[i][j] - inv_rate * C2[i][j];
 
-        if (fabs(III_u) < 1e-6) printf("[ERROR]III_u = %f, det = %f\n", III_u, det); // 这里是因为四面体退化成一个平面了
+        if (fabs(III_u) < 1e-6) printf("[ERROR]III_u = %f, det = %f\n", III_u, det);  // 这里是因为四面体退化成一个平面了
         inv_rate = 1 / III_u;
 
         factor = II_u * inv_rate;
@@ -155,6 +157,11 @@ __device__ __host__ void GetRotation_D(float F[3][3], float R[3][3]) {
     for (int i = 0; i < 3; i++)
         for (int j = 0; j < 3; j++)
             for (int k = 0; k < 3; k++) R[i][j] += F[i][k] * inv_U[k][j];
+}
+
+__device__ __host__ void GetRotation_D(float F[3][3], float R[3][3]) {
+    float det;
+    GetRotation_D(F, R, det);
 }
 
 __device__ __host__ float Matrix_Inverse_3(float* A, float* R) {

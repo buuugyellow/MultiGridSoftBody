@@ -45,6 +45,7 @@ void Simulator::Init() {
         m_normal.push_back(0.0f);
         m_normal.push_back(0.0f);
     }
+    m_tetVertEp.resize(m_tetVertPos.size() / 3);
 
     // Ω‚À„∆˜≥ı ºªØ
     switch (g_solverType) {

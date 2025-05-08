@@ -442,7 +442,7 @@ void Renderer::CreateSphereRenderBuffers(SphereRenderBuffers& buffer) {
     GLVerify(glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 100000, 0, GL_DYNAMIC_DRAW));
 
     GLVerify(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0));
-    GLVerify(glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0));
+    GLVerify(glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float))));
     GLVerify(glEnableVertexAttribArray(0));
     GLVerify(glEnableVertexAttribArray(1));
 }
