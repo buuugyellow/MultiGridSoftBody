@@ -279,9 +279,7 @@ public:
 	void doUI();
 public:
     static void CreateSphereRenderBuffers(SphereRenderBuffers& buffer);
-    static void UpdateBuffers(SphereRenderBuffers& buffer, float* particles, int* phase);
-    static void UpdateBuffersConst(SphereRenderBuffers& buffer, float* particles, int* phase);
-    static void UpdateBuffers(SphereRenderBuffers& buffer, float* particles, int* phase, int* indices, int numIndices);
+    static void UpdateBuffers(SphereRenderBuffers& buffer, float* particles);
 
 	static GLuint compileShader(const std::string& filename, GLenum type);
 	static GLuint linkProgram(std::initializer_list<GLuint> shaders);
@@ -328,7 +326,7 @@ public:
 	bool m_showGraphicPara = false;
 	bool m_showFlexPara = false;
 	std::string m_name = "test";
-    float m_particleR = 0.05;
+    float m_particleR = 0.05f;
     bool m_showParticle = true;
 	void (*doUICallBack)();
 };

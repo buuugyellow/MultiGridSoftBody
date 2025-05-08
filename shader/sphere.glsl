@@ -15,11 +15,12 @@ layout(std140, binding=0) uniform TransformUniforms
 
 uniform vec3 colors[16];
 layout(location = 0) in vec3 aPos;
-layout(location = 1) in int phase;
+layout(location = 1) in vec3 aColor;
 layout(location = 0) out Vertex
 {
 	vec3 reflectance;
 	vec3 viewpos;
+    vec3 color;
 } vout;
 
 void main()
@@ -28,7 +29,8 @@ void main()
     vec4 viewPos = ModelViewMatrix * Model * vec4(aPos, 1.0);
 	gl_PointSize = -pointScale * (pointRadius / viewPos.z);
 	vout.viewpos = viewPos.xyz;
-	vout.reflectance = mix(colors[phase % 8] * 2.0, vec3(1.0), 0.1);
+	vout.reflectance = mix(colors[0 % 8] * 2.0, vec3(1.0), 0.1);
+    vout.color = aColor;
 }
 
 fragment:
@@ -37,6 +39,7 @@ layout(location = 0) in Vertex
 {
 	vec3 reflectance;
 	vec3 viewpos;
+    vec3 color;
 } vin;
 
 uniform mat4 ProjectionMatrix;
@@ -59,7 +62,8 @@ void main()
 
 	vec3 Lo = vin.reflectance * max(0.0, sqr(-dot(lightDir, normal) * 0.5 + 0.5));
 
-	out_color = vec4(pow(Lo, vec3(1.0 / 2.2)), 1.0);
+	// out_color = vec4(pow(Lo, vec3(1.0 / 2.2)), 1.0);
+    out_color = vec4(vin.color, 1.0);
 
 	vec3 eyePos = vin.viewpos + normal * pointRadius;
 	vec4 ndcPos =ProjectionMatrix * vec4(eyePos, 1.0);

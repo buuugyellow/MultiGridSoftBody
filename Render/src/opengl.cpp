@@ -439,31 +439,18 @@ void Renderer::CreateSphereRenderBuffers(SphereRenderBuffers& buffer) {
     GLVerify(glGenBuffers(1, &buffer.mPositionVBO));
     GLVerify(glBindVertexArray(buffer.mPositionVAO));
     GLVerify(glBindBuffer(GL_ARRAY_BUFFER, buffer.mPositionVBO));
-    GLVerify(glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 3 * 100000, 0, GL_DYNAMIC_DRAW));
+    GLVerify(glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 100000, 0, GL_DYNAMIC_DRAW));
 
-    GLVerify(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0));
+    GLVerify(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0));
+    GLVerify(glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0));
     GLVerify(glEnableVertexAttribArray(0));
+    GLVerify(glEnableVertexAttribArray(1));
 }
 
-void Renderer::UpdateBuffers(SphereRenderBuffers& buffer, float* particles, int* phase, int* indices, int numIndices) {
-    // regular particles
+void Renderer::UpdateBuffers(SphereRenderBuffers& buffer, float* particles) {
     if (particles) {
         GLVerify(glBindBuffer(GL_ARRAY_BUFFER, buffer.mPositionVBO));
-        GLVerify(glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 3 * buffer.mNumParticles, particles, GL_DYNAMIC_DRAW));
-    }
-}
-
-void Renderer::UpdateBuffers(SphereRenderBuffers& buffer, float* particles, int* phase) {
-    if (particles) {
-        GLVerify(glBindBuffer(GL_ARRAY_BUFFER, buffer.mPositionVBO));
-        GLVerify(glBufferData(GL_ARRAY_BUFFER, buffer.mNumParticles * sizeof(float) * 3, particles, GL_DYNAMIC_DRAW));
-    }
-}
-
-void Renderer::UpdateBuffersConst(SphereRenderBuffers& buffer, float* particles, int* phase) {
-    if (particles) {
-        GLVerify(glBindBuffer(GL_ARRAY_BUFFER, buffer.mPositionVBO));
-        GLVerify(glBufferSubData(GL_ARRAY_BUFFER, 0, buffer.mNumParticles * sizeof(float) * 3, particles));
+        GLVerify(glBufferData(GL_ARRAY_BUFFER, buffer.mNumParticles * sizeof(float) * 6, particles, GL_DYNAMIC_DRAW));
     }
 }
 

@@ -45,6 +45,7 @@ vector<float> g_pointsForRender;  // 仿真线程渲染线程共享的顶点数�
 vector<float> g_normalsForRender;
 vector<float> g_uvForRender;
 vector<float> g_pointsNormalsUVForRender;
+vector<float> g_posColorForRender;
 
 void initCuda() {
     int nvDeviceNum = 0;
@@ -174,7 +175,8 @@ void initRenderSyn() {
 }
 
 __host__ void renderOnce() {
-    for (int i = 0; i < g_pointsNormalsUVForRender.size() / 9; i++) {
+    int vertNum = g_simulator->m_tetVertPos.size() / 3;
+    for (int i = 0; i < vertNum; i++) {
         g_pointsNormalsUVForRender[i * 9 + 0] = g_simulator->m_tetVertPos[i * 3 + 0];
         g_pointsNormalsUVForRender[i * 9 + 1] = g_simulator->m_tetVertPos[i * 3 + 1];
         g_pointsNormalsUVForRender[i * 9 + 2] = g_simulator->m_tetVertPos[i * 3 + 2];
@@ -183,8 +185,19 @@ __host__ void renderOnce() {
         g_pointsNormalsUVForRender[i * 9 + 5] = g_simulator->m_normal[i * 3 + 2];
     }
     g_render->UpdateMesh(g_simulator->m_softObject->m_renderObjId, g_simulator->m_tetFaceIdx.size(), g_simulator->m_tetFaceIdx.size() * sizeof(unsigned int),
-                         g_simulator->m_tetFaceIdx.data(), g_pointsNormalsUVForRender.size() * sizeof(float), g_pointsNormalsUVForRender.data());
-    g_render->UpdatePartical(g_simulator->m_tetVertPos.size() / 3, g_simulator->m_tetVertPos.data());
+                         g_simulator->m_tetFaceIdx.data(), vertNum * 9 * sizeof(float), g_pointsNormalsUVForRender.data());
+
+
+    for (int i = 0; i < vertNum; i++) {
+        g_posColorForRender[i * 6 + 0] = g_simulator->m_tetVertPos[i * 3 + 0];
+        g_posColorForRender[i * 6 + 1] = g_simulator->m_tetVertPos[i * 3 + 1];
+        g_posColorForRender[i * 6 + 2] = g_simulator->m_tetVertPos[i * 3 + 2];
+        g_posColorForRender[i * 6 + 3] = 1;
+        g_posColorForRender[i * 6 + 4] = 0;
+        g_posColorForRender[i * 6 + 5] = 0;
+    }
+
+    g_render->UpdatePartical(vertNum, g_posColorForRender.data());
     int ret = g_render->Render();
     if (ret) LOG(ERROR) << "render error";
 }
@@ -212,6 +225,7 @@ void init() {
     g_pointsNormalsUVForRender.resize(g_simulator->m_tetVertPos.size() * 3);
     g_pointsForRender.resize(g_simulator->m_tetVertPos.size());
     g_normalsForRender.resize(g_simulator->m_tetVertPos.size());
+    g_posColorForRender.resize(g_simulator->m_tetVertPos.size() * 6);
     LOG(INFO) << "init 结束";
 }
 

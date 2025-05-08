@@ -120,7 +120,7 @@ void Application::InitRender(std::string& hdrfile, std::string& shaderfolder, st
 
 void Application::UpdatePartical(int num, float* vert) { 
 	m_renderer->m_particleRenderBuffers.mNumParticles = num;
-    m_renderer->UpdateBuffers(m_renderer->m_particleRenderBuffers, vert, nullptr);
+    m_renderer->UpdateBuffers(m_renderer->m_particleRenderBuffers, vert);
 }
 
 void Application::SetShowPartical(bool show) { m_renderer->m_showParticle = show; }
