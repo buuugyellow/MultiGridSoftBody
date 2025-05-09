@@ -17,6 +17,7 @@
 #include <memory>
 #include "opengl.hpp"
 #include "ArcballHelper.h"
+#include "imgui/imgui_internal.h"
 
 class OS_API Application
 {
@@ -30,6 +31,8 @@ public:
 
 
 	void InitRender(std::string& hdrfile, std::string& shaderfolder, std::string& name, void(*doUICallBack)());
+
+	ImGuiContext* GetImGuiContext();
 
 	void UpdatePartical(int num, float* vert);
 

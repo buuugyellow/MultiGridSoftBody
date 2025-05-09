@@ -473,6 +473,6 @@ void PDSolverData::runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, 
             maxEpDensity = max(maxEpDensity, g_simulator->m_tetVertEpDensity[i]);
             minEpDensity = min(minEpDensity, g_simulator->m_tetVertEpDensity[i]);
         }
-        printf("maxEpDensity = %f, minEpDensity = %f\n", maxEpDensity, minEpDensity);
+        //printf("maxEpDensity = %f, minEpDensity = %f\n", maxEpDensity, minEpDensity);
     }
 }

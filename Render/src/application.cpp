@@ -118,6 +118,8 @@ void Application::InitRender(std::string& hdrfile, std::string& shaderfolder, st
 	glLineWidth(3);
 }
 
+ImGuiContext* Application::GetImGuiContext() { return GImGui; }
+
 void Application::UpdatePartical(int num, float* vert) { 
 	m_renderer->m_particleRenderBuffers.mNumParticles = num;
     m_renderer->UpdateBuffers(m_renderer->m_particleRenderBuffers, vert);

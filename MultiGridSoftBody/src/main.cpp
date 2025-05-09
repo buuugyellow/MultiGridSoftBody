@@ -169,6 +169,8 @@ void initRenderSyn() {
     string hdrfile = "env1.hdr";
     string name = "MultiGridSoftBody";
     g_render->InitRender(hdrfile, shaderFolder, name, doUI);
+    ImGuiContext* ctx = g_render->GetImGuiContext();
+    ImGui::SetCurrentContext(ctx);
     float ssoaparas[8] = {2.0f, 1.5f, 0.9f, 0.9f, 0.009f, 2.8f};
     g_render->SetSSAOParas(ssoaparas);
     g_simulator->m_softObject->m_renderObjId = g_render->CreatePBRObj(g_simulator->m_softObject->m_name, 0.6, 0.5, 0.4, 0.2, 0.3);
@@ -184,8 +186,10 @@ __host__ void renderOnce() {
         g_pointsNormalsUVForRender[i * 9 + 4] = g_simulator->m_normal[i * 3 + 1];
         g_pointsNormalsUVForRender[i * 9 + 5] = g_simulator->m_normal[i * 3 + 2];
     }
-    //g_render->UpdateMesh(g_simulator->m_softObject->m_renderObjId, g_simulator->m_tetFaceIdx.size(), g_simulator->m_tetFaceIdx.size() * sizeof(unsigned int),
-    //                     g_simulator->m_tetFaceIdx.data(), vertNum * 9 * sizeof(float), g_pointsNormalsUVForRender.data());
+    if (g_UIShowMesh)
+        g_render->UpdateMesh(g_simulator->m_softObject->m_renderObjId, g_simulator->m_tetFaceIdx.size(),
+                             g_simulator->m_tetFaceIdx.size() * sizeof(unsigned int), g_simulator->m_tetFaceIdx.data(), vertNum * 9 * sizeof(float),
+                             g_pointsNormalsUVForRender.data());
 
 
     for (int i = 0; i < vertNum; i++) {
@@ -194,6 +198,7 @@ __host__ void renderOnce() {
         g_posColorForRender[i * 6 + 2] = g_simulator->m_tetVertPos[i * 3 + 2];
 
         // maxEpDensity = 102.653015, minEpDensity = -172.211227 120_12_12
+        // maxEpDensity = 75.676262, minEpDensity = -98.100319 60_6_6
         // maxEpDensity = 74.737572, minEpDensity = -93.356651 40_4_4 为什么不一样？
         float EpDensity = g_simulator->m_tetVertEpDensity[i];
         float EpMapValue;

@@ -32,7 +32,9 @@ extern float g_conEk_V2;
 extern float g_conEp_V2;
 enum SolverType { PD, PD_MG };
 extern SolverType g_solverType;
+
 extern double duration_physical;
+extern bool g_UIShowMesh;
 extern bool g_UIShowParticle;
 extern float g_UIParticleR;
 
