@@ -184,8 +184,8 @@ __host__ void renderOnce() {
         g_pointsNormalsUVForRender[i * 9 + 4] = g_simulator->m_normal[i * 3 + 1];
         g_pointsNormalsUVForRender[i * 9 + 5] = g_simulator->m_normal[i * 3 + 2];
     }
-    g_render->UpdateMesh(g_simulator->m_softObject->m_renderObjId, g_simulator->m_tetFaceIdx.size(), g_simulator->m_tetFaceIdx.size() * sizeof(unsigned int),
-                         g_simulator->m_tetFaceIdx.data(), vertNum * 9 * sizeof(float), g_pointsNormalsUVForRender.data());
+    //g_render->UpdateMesh(g_simulator->m_softObject->m_renderObjId, g_simulator->m_tetFaceIdx.size(), g_simulator->m_tetFaceIdx.size() * sizeof(unsigned int),
+    //                     g_simulator->m_tetFaceIdx.data(), vertNum * 9 * sizeof(float), g_pointsNormalsUVForRender.data());
 
 
     for (int i = 0; i < vertNum; i++) {
@@ -193,10 +193,11 @@ __host__ void renderOnce() {
         g_posColorForRender[i * 6 + 1] = g_simulator->m_tetVertPos[i * 3 + 1];
         g_posColorForRender[i * 6 + 2] = g_simulator->m_tetVertPos[i * 3 + 2];
 
-        // maxEp = 2.985824, minEp = -1.366608
-        float Ep = g_simulator->m_tetVertEp[i];
+        // maxEpDensity = 102.653015, minEpDensity = -172.211227 120_12_12
+        // maxEpDensity = 74.737572, minEpDensity = -93.356651 40_4_4 为什么不一样？
+        float EpDensity = g_simulator->m_tetVertEpDensity[i];
         float EpMapValue;
-        EpMapValue = (Ep > 0) ? (1 - pow(2, -Ep * 50) / 2) : (pow(2, Ep * 50) / 2);
+        EpMapValue = (EpDensity > 0) ? (1 - pow(2, -EpDensity) / 2) : (pow(2, EpDensity) / 2);
         Point3D colorBegin = {0, 1, 0};
         Point3D colorEnd = {1, 0, 0};
         Point3D color = colorBegin + (colorEnd - colorBegin) * EpMapValue;

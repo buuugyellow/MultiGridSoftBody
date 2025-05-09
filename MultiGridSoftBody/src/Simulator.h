@@ -20,7 +20,11 @@ public:
     vector<int> m_tetIdx;               // 同上
     vector<unsigned int> m_tetFaceIdx;  // 用于控制渲染的三角形索引
     vector<float> m_normal;             // 所有四面体顶点都分配法向量，如果有需要可以用于碰撞检测
-    vector<float> m_tetVertEp;                 // 所有四面体顶点均摊到的能量
+
+    // 可视化
+    vector<float> m_tetVertEpDensity;   // 四面体顶点的能量密度
+    vector<float> m_tetVertEpSum;       // 所有顶点相关联的四面体的能量的总和
+    vector<float> m_tetVertVSum;        // 所有顶点相关联的四面体的体积的总和
 
     static Simulator& GetInstance();  // 获取单例对象
     void Init();                      // 初始化

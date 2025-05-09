@@ -385,12 +385,13 @@ void PDSolverData::runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, 
     cudaMemcpy(tetVertPos_h.data(), tetVertPos_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(tetVertPos_old_h.data(), tetVertPos_old_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(tetVertPos_prev_h.data(), tetVertPos_prev_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
-
+    if (calEveryVertEp) {
+        assert(g_simulator->m_tetVertEpDensity.size() == tetVertNum);
+        fill(g_simulator->m_tetVertEpDensity.begin(), g_simulator->m_tetVertEpDensity.end(), 0);
+        fill(g_simulator->m_tetVertEpSum.begin(), g_simulator->m_tetVertEpSum.end(), 0);
+        fill(g_simulator->m_tetVertVSum.begin(), g_simulator->m_tetVertVSum.end(), 0);
+    }
     Ek = Ep = dX = 0;
-    float maxEp = -FLT_MAX;
-    float minEp = FLT_MAX;
-    if (calEveryVertEp) assert(g_simulator->m_tetVertEp.size() == tetVertNum);
-    if (calEveryVertEp) fill(g_simulator->m_tetVertEp.begin(), g_simulator->m_tetVertEp.end(), 0);
 
     // 计算 deltaX, Ek
     for (int i = 0; i < tetVertNum; i++) {
@@ -417,22 +418,23 @@ void PDSolverData::runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, 
         int vIndex2 = m_tetIndex[i * 4 + 2];
         int vIndex3 = m_tetIndex[i * 4 + 3];
 
-        float vert0[3] = {tetVertPos_h[vIndex0 * 3 + 0], tetVertPos_h[vIndex0 * 3 + 1], tetVertPos_h[vIndex0 * 3 + 2]};
-        float vert1[3] = {tetVertPos_h[vIndex1 * 3 + 0], tetVertPos_h[vIndex1 * 3 + 1], tetVertPos_h[vIndex1 * 3 + 2]};
-        float vert2[3] = {tetVertPos_h[vIndex2 * 3 + 0], tetVertPos_h[vIndex2 * 3 + 1], tetVertPos_h[vIndex2 * 3 + 2]};
-        float vert3[3] = {tetVertPos_h[vIndex3 * 3 + 0], tetVertPos_h[vIndex3 * 3 + 1], tetVertPos_h[vIndex3 * 3 + 2]};
+        Point3D vert0 = {tetVertPos_h[vIndex0 * 3 + 0], tetVertPos_h[vIndex0 * 3 + 1], tetVertPos_h[vIndex0 * 3 + 2]};
+        Point3D vert1 = {tetVertPos_h[vIndex1 * 3 + 0], tetVertPos_h[vIndex1 * 3 + 1], tetVertPos_h[vIndex1 * 3 + 2]};
+        Point3D vert2 = {tetVertPos_h[vIndex2 * 3 + 0], tetVertPos_h[vIndex2 * 3 + 1], tetVertPos_h[vIndex2 * 3 + 2]};
+        Point3D vert3 = {tetVertPos_h[vIndex3 * 3 + 0], tetVertPos_h[vIndex3 * 3 + 1], tetVertPos_h[vIndex3 * 3 + 2]};
+        float volumn = GetVolumn(vert0, vert1, vert2, vert3);
 
         // 先计算shape矩阵
         float D[9];
-        D[0] = vert1[0] - vert0[0];
-        D[1] = vert2[0] - vert0[0];
-        D[2] = vert3[0] - vert0[0];
-        D[3] = vert1[1] - vert0[1];
-        D[4] = vert2[1] - vert0[1];
-        D[5] = vert3[1] - vert0[1];
-        D[6] = vert1[2] - vert0[2];
-        D[7] = vert2[2] - vert0[2];
-        D[8] = vert3[2] - vert0[2];
+        D[0] = vert1.x - vert0.x;
+        D[1] = vert2.x - vert0.x;
+        D[2] = vert3.x - vert0.x;
+        D[3] = vert1.y - vert0.y;
+        D[4] = vert2.y - vert0.y;
+        D[5] = vert3.y - vert0.y;
+        D[6] = vert1.z - vert0.z;
+        D[7] = vert2.z - vert0.z;
+        D[8] = vert3.z - vert0.z;
 
         // 计算形变梯度F
         float F[9];
@@ -451,35 +453,26 @@ void PDSolverData::runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, 
 
         Ep += e;
         if (calEveryVertEp) {
-            if (deltaF < 1) e = -e;
-            g_simulator->m_tetVertEp[vIndex0] += e / 4.0f;
-            g_simulator->m_tetVertEp[vIndex1] += e / 4.0f;
-            g_simulator->m_tetVertEp[vIndex2] += e / 4.0f;
-            g_simulator->m_tetVertEp[vIndex3] += e / 4.0f;
-
-            maxEp = max(maxEp, g_simulator->m_tetVertEp[vIndex0]);
-            minEp = min(minEp, g_simulator->m_tetVertEp[vIndex0]);
-            maxEp = max(maxEp, g_simulator->m_tetVertEp[vIndex1]);
-            minEp = min(minEp, g_simulator->m_tetVertEp[vIndex1]);
-            maxEp = max(maxEp, g_simulator->m_tetVertEp[vIndex2]);
-            minEp = min(minEp, g_simulator->m_tetVertEp[vIndex2]);
-            maxEp = max(maxEp, g_simulator->m_tetVertEp[vIndex3]);
-            minEp = min(minEp, g_simulator->m_tetVertEp[vIndex3]);
+            if (deltaF < 1.0f) e = -e;
+            g_simulator->m_tetVertEpSum[vIndex0] += e;
+            g_simulator->m_tetVertEpSum[vIndex1] += e;
+            g_simulator->m_tetVertEpSum[vIndex2] += e;
+            g_simulator->m_tetVertEpSum[vIndex3] += e;
+            g_simulator->m_tetVertVSum[vIndex0] += volumn;
+            g_simulator->m_tetVertVSum[vIndex1] += volumn;
+            g_simulator->m_tetVertVSum[vIndex2] += volumn;
+            g_simulator->m_tetVertVSum[vIndex3] += volumn;
         }
     }
-    printf("maxEp = %f, minEp = %f\n", maxEp, minEp);
-    // float error = 0;
-    // if (config_writeOrReadEnergy) {  // 写收敛时的能量
-    //     if (stepEnd) fprintf(energyStepFile, "%f,%f,%f\n", Ek + Ep, Ek, Ep);
-    // } else {  // 读收敛时的能量，并且计算误差
-    //     static float E0;
-    //     if (iterBegin) E0 = Ek + Ep;
-    //     if (g_stepCnt < 200) {
-    //         float E_convergence = g_conEnergy[g_stepCnt - 1];
-    //         float Ek_convergence;
-    //         float Ep_convergence;
-    //         error = (Ek + Ep - E_convergence) / (E0 - E_convergence);
-    //     }
-    // }
-    // fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", iter, Ek + Ep, Ek, Ep, dX, error);
+
+    if (calEveryVertEp){
+        float maxEpDensity = -FLT_MAX;
+        float minEpDensity = FLT_MAX;
+        for (int i = 0; i < tetVertNum; i++) {
+            g_simulator->m_tetVertEpDensity[i] = g_simulator->m_tetVertEpSum[i] / g_simulator->m_tetVertVSum[i];
+            maxEpDensity = max(maxEpDensity, g_simulator->m_tetVertEpDensity[i]);
+            minEpDensity = min(minEpDensity, g_simulator->m_tetVertEpDensity[i]);
+        }
+        printf("maxEpDensity = %f, minEpDensity = %f\n", maxEpDensity, minEpDensity);
+    }
 }
