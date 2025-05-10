@@ -186,11 +186,8 @@ __host__ void renderOnce() {
         g_pointsNormalsUVForRender[i * 9 + 4] = g_simulator->m_normal[i * 3 + 1];
         g_pointsNormalsUVForRender[i * 9 + 5] = g_simulator->m_normal[i * 3 + 2];
     }
-    if (g_UIShowMesh)
-        g_render->UpdateMesh(g_simulator->m_softObject->m_renderObjId, g_simulator->m_tetFaceIdx.size(),
-                             g_simulator->m_tetFaceIdx.size() * sizeof(unsigned int), g_simulator->m_tetFaceIdx.data(), vertNum * 9 * sizeof(float),
-                             g_pointsNormalsUVForRender.data());
-
+    g_render->UpdateMesh(g_simulator->m_softObject->m_renderObjId, g_simulator->m_tetFaceIdx.size(), g_simulator->m_tetFaceIdx.size() * sizeof(unsigned int),
+                         g_simulator->m_tetFaceIdx.data(), vertNum * 9 * sizeof(float), g_pointsNormalsUVForRender.data());
 
     for (int i = 0; i < vertNum; i++) {
         g_posColorForRender[i * 6 + 0] = g_simulator->m_tetVertPos[i * 3 + 0];

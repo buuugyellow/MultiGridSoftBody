@@ -2,6 +2,7 @@
 #include "PDSolver.h"
 #include "PDSolver_MG.h"
 #include "SoftObject.h"
+#include "Collider.h"
 
 #include <vector>
 
@@ -9,8 +10,6 @@
 using namespace std;
 class Simulator {
 public:
-    
-
     SoftObject* m_softObject;
     SoftObject* m_softObject_coarse;
     PDSolver* m_solver;
@@ -20,6 +19,10 @@ public:
     vector<int> m_tetIdx;               // 同上
     vector<unsigned int> m_tetFaceIdx;  // 用于控制渲染的三角形索引
     vector<float> m_normal;             // 所有四面体顶点都分配法向量，如果有需要可以用于碰撞检测
+
+    // 碰撞检测
+    vector<SphereCollider> m_sphereColliders;
+    vector<CapsuleCollider> m_capsuleColliders;
 
     // 可视化
     vector<float> m_tetVertEpDensity;   // 四面体顶点的能量密度

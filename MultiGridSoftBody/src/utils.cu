@@ -9,7 +9,7 @@
 
 using namespace std;
 
-__host__ void OutputPosNormIndex(string filepath, std::vector<float> pos = std::vector<float>(), std::vector<float> norm = std::vector<float>(),
+void OutputPosNormIndex(string filepath, std::vector<float> pos = std::vector<float>(), std::vector<float> norm = std::vector<float>(),
                                             std::vector<unsigned int> index = std::vector<unsigned int>()) {
     ofstream out(filepath);
     if (!out) {
@@ -42,7 +42,7 @@ __host__ void OutputPosNormIndex(string filepath, std::vector<float> pos = std::
     }
 }
 
-__host__ void printCudaError(const char* funcName) {
+void printCudaError(const char* funcName) {
     cudaError_t cudaStatus = cudaGetLastError();
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "%s error: %s\n", funcName, cudaGetErrorString(cudaStatus));

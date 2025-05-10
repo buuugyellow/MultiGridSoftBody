@@ -13,6 +13,7 @@ bool g_UIShowParticle = true;
 float g_UIParticleR = 0.05f;
 
 void doUI() {
+    // UI 更新
     ImGui::Begin("MultiGridSoftBody", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoMove);
     ImGui::GetStyle().Alpha = 0.5f;
     ImGui::SetNextWindowPos(ImVec2(10, 10));
@@ -23,9 +24,13 @@ void doUI() {
     ImGui::Checkbox("Mesh", &g_UIShowMesh);
     ImGui::Checkbox("Particle", &g_UIShowParticle);
     if (g_UIShowParticle) ImGui::SliderFloat(u8"Particle Radius", &g_UIParticleR, 0.05, 0.10);
-    g_render->SetShowPartical(g_UIShowParticle);
-    g_render->SetParticalRadius(g_UIParticleR);
+
 
     ImGui::PopStyleColor();
     ImGui::End();
+
+    // 逻辑更新
+    g_render->SetShowPartical(g_UIShowParticle);
+    g_render->SetParticalRadius(g_UIParticleR);
+    g_render->SetActive(g_simulator->m_softObject->m_renderObjId, g_UIShowMesh);
 }

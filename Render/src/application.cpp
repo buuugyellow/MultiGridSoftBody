@@ -91,13 +91,13 @@ int Application::Render() {
 	return ret;
 }
 
-void Application::ClearActieve() {
+void Application::ClearActive() {
 	for (auto obj : m_renderer->m_sceneobject->m_meshes)
 		obj->m_draw = false;
 }
 
-void Application::SetActieve(int i) {
-	m_renderer->m_sceneobject->m_meshes[i]->m_draw = true;
+void Application::SetActive(int i, bool active) {
+	m_renderer->m_sceneobject->m_meshes[i]->m_draw = active;
 }
 
 void Application::InitRender(std::string& hdrfile, std::string& shaderfolder, std::string& name, void(*doUICallBack)()) {

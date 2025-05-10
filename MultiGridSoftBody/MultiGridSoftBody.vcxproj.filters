@@ -16,6 +16,9 @@
     <Filter Include="imgui">
       <UniqueIdentifier>{d3966d6b-54c9-4d92-8e3a-d6b08f773714}</UniqueIdentifier>
     </Filter>
+    <Filter Include="碰撞检测">
+      <UniqueIdentifier>{9df5ee32-5e6f-4325-bfea-4269b7ffa448}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\gui.cpp">
@@ -60,6 +63,9 @@
     <ClCompile Include="src\PDSolver_MG.cpp">
       <Filter>解算器</Filter>
     </ClCompile>
+    <ClCompile Include="src\Collider.cpp">
+      <Filter>碰撞检测</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\gui.h">
@@ -103,6 +109,12 @@
     </ClInclude>
     <ClInclude Include="src\PDSolver_MG.h">
       <Filter>解算器</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Collider.h">
+      <Filter>碰撞检测</Filter>
+    </ClInclude>
+    <ClInclude Include="src\simpleMath.h">
+      <Filter>全局类</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

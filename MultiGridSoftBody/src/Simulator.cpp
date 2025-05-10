@@ -1,4 +1,5 @@
 #pragma once
+#include "Simulator.h"
 #include "PDSolver.h"
 #include "global.h"
 

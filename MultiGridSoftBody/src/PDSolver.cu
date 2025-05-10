@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "global.h"
+#include "Simulator.h"
 
 void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
                         float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h) {

@@ -47,9 +47,9 @@ public:
 	int CreatePBRObj(std::string name, const std::string& abeldo, const std::string& normal,
 		const std::string& metallic, const std::string& roughness);
 
-	void ClearActieve();
+	void ClearActive();
 
-	void SetActieve(int i);
+	void SetActive(int i, bool active);
 
 	int CreatePBRObj(std::string name, float r, float g, float b, float metallic, float roughness);
 
