@@ -219,7 +219,7 @@ __host__ void renderOnce() {
 
 void init() {
     config_dataDir = "../data/";
-    config_objName = "cube120_12_12";  // 单一物体
+    config_objName = "Y_1_10_1";  // 单一物体
     config_objName_coarse = "cube40_4_4";
     g_synOrAsy = true;
     g_solverType = PD;

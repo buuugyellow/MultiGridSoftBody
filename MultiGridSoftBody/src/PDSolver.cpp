@@ -133,8 +133,11 @@ void PDSolver::InitVolumeConstraint() {
 void PDSolver::SetFixedVert() {
     m_tetVertFixed.resize(m_tetVertNum, 1.0f);
     for (int i = 0; i < m_tetVertNum; i++) {
+        float x = m_tetVertPos[i * 3 + 0];
+        float y = m_tetVertPos[i * 3 + 1];
         float z = m_tetVertPos[i * 3 + 2];
-        if (fabs(z - 10) < 1e-5) m_tetVertFixed[i] = 0.0f;
+        // if (fabs(z - 10) < 1e-5) m_tetVertFixed[i] = 0.0f;
+        if (fabs(y - 10) < 1e-5) m_tetVertFixed[i] = 0.0f;
     }
 }
 
@@ -146,7 +149,7 @@ void PDSolver::Init(const vector<int>& tetIdx, const vector<float> tetVertPos) {
     m_volumnStiffness = 1000.0f;
     m_rho = 0.9992f;
     m_gravityX = 0.0f;
-    m_gravityY = -9.8f;
+    m_gravityY = 0.0f;
     m_gravityZ = 0.0f;
 
     m_tetIndex = tetIdx;
