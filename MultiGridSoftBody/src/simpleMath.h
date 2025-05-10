@@ -31,3 +31,4 @@ __device__ __host__ void GetRotation_D(float F[3][3], float R[3][3], float& delt
 __device__ __host__ bool pointInTet(const float* tetVertPos, const float* tetFaceNormal, const float* point);  // 判断点是否在四面体内
 __device__ __host__ vector<float> barycentricCoordinate(const float* point, const float* tetCenter, const float* tetFaceArea, const float* tetFaceNormal,
                                                         float V);  // 有预计算数据的四面体重心坐标计算，如四面体体积、三角形面积等
+void CreateSphere(float radius, int slices, int segments, vector<float>& verts, vector<unsigned int>& indices, const vector<float>& center);

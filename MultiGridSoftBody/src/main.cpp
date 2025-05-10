@@ -173,10 +173,17 @@ void initRenderSyn() {
     ImGui::SetCurrentContext(ctx);
     float ssoaparas[8] = {2.0f, 1.5f, 0.9f, 0.9f, 0.009f, 2.8f};
     g_render->SetSSAOParas(ssoaparas);
+
     g_simulator->m_softObject->m_renderObjId = g_render->CreatePBRObj(g_simulator->m_softObject->m_name, 0.6, 0.5, 0.4, 0.2, 0.3);
+
+    for (int i = 0; i < g_simulator->m_sphereColliders.size(); i++) {
+        auto sphere = g_simulator->m_sphereColliders[i]; 
+        sphere->m_renderObjId = g_render->CreatePBRObj("sphere_" + to_string(i), 0, 1, 0, 1, 1);
+    }
 }
 
-__host__ void renderOnce() {
+void renderOnce() {
+    // 更新软体
     int vertNum = g_simulator->m_tetVertPos.size() / 3;
     for (int i = 0; i < vertNum; i++) {
         g_pointsNormalsUVForRender[i * 9 + 0] = g_simulator->m_tetVertPos[i * 3 + 0];
@@ -189,6 +196,14 @@ __host__ void renderOnce() {
     g_render->UpdateMesh(g_simulator->m_softObject->m_renderObjId, g_simulator->m_tetFaceIdx.size(), g_simulator->m_tetFaceIdx.size() * sizeof(unsigned int),
                          g_simulator->m_tetFaceIdx.data(), vertNum * 9 * sizeof(float), g_pointsNormalsUVForRender.data());
 
+
+    // 更新碰撞体
+    for (auto sphere : g_simulator->m_sphereColliders) {
+        g_render->UpdateMesh(sphere->m_renderObjId, sphere->m_triIdx.size(), sphere->m_triIdx.size() * sizeof(unsigned int), sphere->m_triIdx.data(),
+                             sphere->m_vertNum * 9 * sizeof(float), sphere->m_vert9float.data());
+    }
+
+    // 更新可视化的软体顶点
     for (int i = 0; i < vertNum; i++) {
         g_posColorForRender[i * 6 + 0] = g_simulator->m_tetVertPos[i * 3 + 0];
         g_posColorForRender[i * 6 + 1] = g_simulator->m_tetVertPos[i * 3 + 1];
@@ -203,13 +218,13 @@ __host__ void renderOnce() {
         Point3D colorBegin = {0, 1, 0};
         Point3D colorEnd = {1, 0, 0};
         Point3D color = colorBegin + (colorEnd - colorBegin) * EpMapValue;
-        //float EpMapValue = 1 - pow(2, -g_simulator->m_tetVertPos[i * 3 + 2]);
         g_posColorForRender[i * 6 + 3] = color.x;
         g_posColorForRender[i * 6 + 4] = color.y;
         g_posColorForRender[i * 6 + 5] = color.z;
     }
-
     g_render->UpdatePartical(vertNum, g_posColorForRender.data());
+
+    // 渲染
     int ret = g_render->Render();
     if (ret) LOG(ERROR) << "render error";
 }
@@ -241,18 +256,6 @@ void init() {
     LOG(INFO) << "init 结束";
 }
 
-void run() {
-    while (true) {
-        g_simulator->Update();
-        if (mtx.try_lock()) {  // 成功获取锁，此时写顶点数据，否则继续
-            // 在四面体顶点中抽取出表面顶点坐标
-            g_pointsForRender = g_simulator->m_tetVertPos;
-            g_normalsForRender = g_simulator->m_normal;
-            mtx.unlock();
-        }
-    }
-}
-
 int main() {
     init();
     if (g_synOrAsy) {  // 同步
@@ -260,7 +263,15 @@ int main() {
         while (true) g_simulator->Update();
     } else { // 异步
         initRenderAsy();
-        run();
+        while (true) {
+            g_simulator->Update();
+            if (mtx.try_lock()) {  // 成功获取锁，此时写顶点数据，否则继续
+                // 在四面体顶点中抽取出表面顶点坐标
+                g_pointsForRender = g_simulator->m_tetVertPos;
+                g_normalsForRender = g_simulator->m_normal;
+                mtx.unlock();
+            }
+        }
     }
     return 0;
 }

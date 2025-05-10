@@ -1,10 +1,11 @@
 #pragma once
+#include <vector>
+#include <memory>
+
+#include "Collider.h"
 #include "PDSolver.h"
 #include "PDSolver_MG.h"
 #include "SoftObject.h"
-#include "Collider.h"
-
-#include <vector>
 
 // 懒汉式全局单例，包括模型和解算器
 using namespace std;
@@ -21,17 +22,18 @@ public:
     vector<float> m_normal;             // 所有四面体顶点都分配法向量，如果有需要可以用于碰撞检测
 
     // 碰撞检测
-    vector<SphereCollider> m_sphereColliders;
-    vector<CapsuleCollider> m_capsuleColliders;
+    vector<shared_ptr<SphereCollider>> m_sphereColliders;
+    vector<shared_ptr<CapsuleCollider>> m_capsuleColliders;
 
     // 可视化
-    vector<float> m_tetVertEpDensity;   // 四面体顶点的能量密度
-    vector<float> m_tetVertEpSum;       // 所有顶点相关联的四面体的能量的总和
-    vector<float> m_tetVertVSum;        // 所有顶点相关联的四面体的体积的总和
+    vector<float> m_tetVertEpDensity;  // 四面体顶点的能量密度
+    vector<float> m_tetVertEpSum;      // 所有顶点相关联的四面体的能量的总和
+    vector<float> m_tetVertVSum;       // 所有顶点相关联的四面体的体积的总和
 
     static Simulator& GetInstance();  // 获取单例对象
     void Init();                      // 初始化
     void Update();                    // 更新
+    void UpdateCollider();            // 更新碰撞体
 
 private:
     Simulator() = default;

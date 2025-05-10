@@ -1,16 +1,17 @@
-#include "global.h"
-
 #include <math.h>
 #include <stdio.h>
+
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <vector>
 
+#include "global.h"
+
 using namespace std;
 
-void OutputPosNormIndex(string filepath, std::vector<float> pos = std::vector<float>(), std::vector<float> norm = std::vector<float>(),
-                                            std::vector<unsigned int> index = std::vector<unsigned int>()) {
+void OutputPosNormIndex(string filepath, vector<float> pos = vector<float>(), vector<float> norm = vector<float>(),
+                        vector<unsigned int> index = vector<unsigned int>()) {
     ofstream out(filepath);
     if (!out) {
         cout << "OutputPosNormIndex : open file " << filepath << " failed " << endl;
@@ -46,6 +47,53 @@ void printCudaError(const char* funcName) {
     cudaError_t cudaStatus = cudaGetLastError();
     if (cudaStatus != cudaSuccess) {
         fprintf(stderr, "%s error: %s\n", funcName, cudaGetErrorString(cudaStatus));
+    }
+}
+
+void CreateSphere(float radius, int slices, int segments, vector<float>& verts, vector<unsigned int>& indices, const vector<float>& center) {
+    verts.clear();
+    indices.clear();
+    const float kPi = 3.141592653589f;
+    const float k2Pi = 2.0f * kPi;
+    float dTheta = kPi / slices;
+    float dPhi = k2Pi / segments;
+    int vertsPerRow = segments + 1;
+    for (int i = 0; i <= slices; ++i) {
+        float theta = dTheta * i;
+
+        for (int j = 0; j <= segments; ++j) {
+            float phi = dPhi * j;
+
+            float x = sinf(theta) * cosf(phi);
+            float y = cosf(theta);
+            float z = sinf(theta) * sinf(phi);
+
+            verts.push_back(x * radius + center[0]);
+            verts.push_back(y * radius + center[1]);
+            verts.push_back(z * radius + center[2]);
+            verts.push_back(x);
+            verts.push_back(y);
+            verts.push_back(z);
+            verts.push_back(0);
+            verts.push_back(0);
+            verts.push_back(0);
+
+            if (i > 0 && j > 0) {
+                unsigned int a = i * vertsPerRow + j;
+                unsigned int b = (i - 1) * vertsPerRow + j;
+                unsigned int c = (i - 1) * vertsPerRow + j - 1;
+                unsigned int d = i * vertsPerRow + j - 1;
+
+                // add a quad for this slice
+                indices.push_back(b);
+                indices.push_back(a);
+                indices.push_back(d);
+
+                indices.push_back(b);
+                indices.push_back(d);
+                indices.push_back(c);
+            }
+        }
     }
 }
 
@@ -276,7 +324,7 @@ __device__ __host__ void barycentricCoordinate(const Point3D& point, const Point
 
         Point3D normal = crossProduct(edge01, edge02);
         Point3D edge0p = p - facePoint0;
-        if (dotProduct(normal, edge0p) > 0){ // 前面有先判断四面体体积是否为 0，此处应该不会有较小值
+        if (dotProduct(normal, edge0p) > 0) {  // 前面有先判断四面体体积是否为 0，此处应该不会有较小值
             normal.x = -normal.x;
             normal.y = -normal.y;
             normal.z = -normal.z;

@@ -37,6 +37,9 @@ void Simulator::Init() {
     m_softObject_coarse->TetFaceExtraction();
     LOG(INFO) << "coarse TetFaceExtraction 结束";
 
+    // 碰撞体初始化
+    m_sphereColliders.push_back(shared_ptr<SphereCollider>(new SphereCollider({-5, 0, 0})));
+
     // 中间变量初始化
     m_tetVertPos = m_softObject->m_tetVertPosORIG;
     m_tetIdx = m_softObject->m_tetIdxORIG;
@@ -65,6 +68,12 @@ void Simulator::Init() {
     LOG(INFO) << "solver: " << g_solverType << " Init 结束";
 }
 
+void Simulator::UpdateCollider() {
+    for (auto sphere : m_sphereColliders) {
+        sphere->Update(Point3D(0.05f, 0, 0));
+    }
+}
+
 void Simulator::Update() {
     if (g_stepCnt > 240) {
         if (timeOutputFile) {
@@ -80,7 +89,7 @@ void Simulator::Update() {
     }
     g_stepCnt++;
     cout << "step frame " << g_stepCnt << endl;
-
+    UpdateCollider();
     switch (g_solverType) {
         case PD:
             m_solver->Step();

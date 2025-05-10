@@ -36,4 +36,4 @@ extern float g_UIParticleR;
 
 void renderOnce();
 void printCudaError(const char* funcName);
-void OutputPosNormIndex(string filepath, std::vector<float> pos, std::vector<float> norm, std::vector<unsigned int> index);
+void OutputPosNormIndex(string filepath, vector<float> pos, vector<float> norm, vector<unsigned int> index);
