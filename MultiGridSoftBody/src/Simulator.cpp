@@ -38,7 +38,7 @@ void Simulator::Init() {
     LOG(INFO) << "coarse TetFaceExtraction 结束";
 
     // 碰撞体初始化
-    m_sphereColliders.push_back(shared_ptr<SphereCollider>(new SphereCollider({-5, 0, 0})));
+    m_sphereColliders.push_back(shared_ptr<SphereCollider>(new SphereCollider({-5, 0, 0}, 5)));
 
     // 中间变量初始化
     m_tetVertPos = m_softObject->m_tetVertPosORIG;

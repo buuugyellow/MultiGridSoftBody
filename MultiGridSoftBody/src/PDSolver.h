@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include "simpleMath.h"
 
 using namespace std;
 struct PDSolverData {
@@ -23,6 +24,10 @@ struct PDSolverData {
     float* tetVertExternForce_d;  // 外力，tetVertNum*3
     float* tetVertForce_d;        // 顶点受力, tetVertNum*3
 
+    char* tetVertIsCollied_d;       // 发生碰撞为 1，否则为 0
+    float* tetVertCollisionDiag_d;  // 碰撞能量的 Hessian 阵的对角阵（向量存储）
+    float* tetVertCollisionForce_d; // 碰撞能量的一阶导向量
+
     void Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
               float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h);
     void runCalculateST(float m_damping, float m_dt, float m_gravityX, float m_gravityY, float m_gravityZ);
@@ -36,6 +41,8 @@ struct PDSolverData {
     void runTestConvergence(int iter);
     void runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex, const vector<float>& m_tetInvD3x3,
                       const vector<float>& m_tetVolume, float m_volumnStiffness, float& Ek, float& Ep, float& dX, bool calEveryVertEp = false);
+    void runClearCollision();
+    void runDCDByPoint_sphere(Point3D center, float radius, float collisionStiffness);
 };
 
 class PDSolver {
@@ -45,6 +52,7 @@ public:
     float m_dt;
     float m_damping;
     float m_volumnStiffness;
+    float m_collisionStiffness;
     float m_rho;
     float m_gravityX;
     float m_gravityY;
@@ -71,4 +79,5 @@ public:
     void InitVolumeConstraint();
     void SetFixedVert();
     void RenderOnce();
+    void DCDByPoint();
 };

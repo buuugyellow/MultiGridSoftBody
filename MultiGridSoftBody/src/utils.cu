@@ -46,7 +46,7 @@ void OutputPosNormIndex(string filepath, vector<float> pos = vector<float>(), ve
 void printCudaError(const char* funcName) {
     cudaError_t cudaStatus = cudaGetLastError();
     if (cudaStatus != cudaSuccess) {
-        fprintf(stderr, "%s error: %s\n", funcName, cudaGetErrorString(cudaStatus));
+        fprintf(stderr, "[ERROR]%s error: %s\n", funcName, cudaGetErrorString(cudaStatus));
     }
 }
 

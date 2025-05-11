@@ -147,6 +147,7 @@ void PDSolver::Init(const vector<int>& tetIdx, const vector<float> tetVertPos) {
     m_dt = 1.0f / 30.0f;
     m_damping = 0.5f;
     m_volumnStiffness = 1000.0f;
+    m_collisionStiffness = 1000.0f;
     m_rho = 0.9992f;
     m_gravityX = 0.0f;
     m_gravityY = 0.0f;
@@ -192,6 +193,13 @@ void PDSolver::RenderOnce() {
     renderOnce();
 }
 
+void PDSolver::DCDByPoint() {
+    pdSolverData->runClearCollision();
+    for (auto sphere : g_simulator->m_sphereColliders) {
+        if (sphere->m_active) pdSolverData->runDCDByPoint_sphere(sphere->m_position, sphere->m_radius, m_collisionStiffness);
+    }
+}
+
 void PDSolver::Step() {
     static float E0 = 0;
     float Ek, Ep, dX, error;
@@ -209,6 +217,7 @@ void PDSolver::Step() {
     float omega = 1.0f;
     for (int i = 0; i < m_iterNum; i++) {
         pdSolverData->runClearTemp();
+        DCDByPoint();
         pdSolverData->runCalculateIF(m_volumnStiffness);
         omega = 4 / (4 - m_rho * m_rho * omega);
         pdSolverData->runcalculatePOS(omega, m_dt);

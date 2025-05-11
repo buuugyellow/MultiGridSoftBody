@@ -13,7 +13,7 @@ struct SphereCollider {
     vector<float> m_vert9float;
     vector<unsigned int> m_triIdx;
     
-    SphereCollider(Point3D pos);
+    SphereCollider(Point3D pos, float radius);
     void Update(Point3D deltaPos);
 };
 

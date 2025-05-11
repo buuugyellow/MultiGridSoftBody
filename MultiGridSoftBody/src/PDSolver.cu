@@ -3,8 +3,8 @@
 
 #include <memory>
 
-#include "global.h"
 #include "Simulator.h"
+#include "global.h"
 
 void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
                         float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h) {
@@ -26,20 +26,27 @@ void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* 
     cudaMemcpy(tetVertMass_d, tetVertMass_h, tetVertNum * sizeof(float), cudaMemcpyHostToDevice);
     cudaMalloc((void**)&tetVertFixed_d, tetVertNum * sizeof(float));
     cudaMemcpy(tetVertFixed_d, tetVertFixed_h, tetVertNum * sizeof(float), cudaMemcpyHostToDevice);
-
     cudaMalloc((void**)&tetVertPos_last_d, tetVertNum * 3 * sizeof(float));
     cudaMalloc((void**)&tetVertPos_old_d, tetVertNum * 3 * sizeof(float));
     cudaMalloc((void**)&tetVertPos_prev_d, tetVertNum * 3 * sizeof(float));
     cudaMalloc((void**)&tetVertPos_next_d, tetVertNum * 3 * sizeof(float));
-
     cudaMalloc((void**)&tetVertVelocity_d, tetVertNum * 3 * sizeof(float));
-    cudaMemset(tetVertVelocity_d, 0.0f, tetVertNum * 3 * sizeof(float));
+    cudaMemset(tetVertVelocity_d, 0, tetVertNum * 3 * sizeof(float));
     cudaMalloc((void**)&tetVertVelocityBak_d, tetVertNum * 3 * sizeof(float));
-    cudaMemset(tetVertVelocityBak_d, 0.0f, tetVertNum * 3 * sizeof(float));
+    cudaMemset(tetVertVelocityBak_d, 0, tetVertNum * 3 * sizeof(float));
     cudaMalloc((void**)&tetVertExternForce_d, tetVertNum * 3 * sizeof(float));
-    cudaMemset(tetVertExternForce_d, 0.0f, tetVertNum * 3 * sizeof(float));
+    cudaMemset(tetVertExternForce_d, 0, tetVertNum * 3 * sizeof(float));
     cudaMalloc((void**)&tetVertForce_d, tetVertNum * 3 * sizeof(float));
-    cudaMemset(tetVertForce_d, 0.0f, tetVertNum * 3 * sizeof(float));
+    cudaMemset(tetVertForce_d, 0, tetVertNum * 3 * sizeof(float));
+    cudaMalloc((void**)&tetVertIsCollied_d, tetVertNum * sizeof(char));
+    cudaMemset(tetVertIsCollied_d, 0, tetVertNum * sizeof(char));
+    cudaMalloc((void**)&tetVertCollisionDiag_d, tetVertNum * 3 * sizeof(float));
+    cudaMemset(tetVertCollisionDiag_d, 0, tetVertNum * 3 * sizeof(float));
+    cudaMalloc((void**)&tetVertCollisionForce_d, tetVertNum * 3 * sizeof(float));
+    cudaMemset(tetVertCollisionForce_d, 0, tetVertNum * 3 * sizeof(float));
+#ifdef PRINT_CUDA_ERROR
+    printCudaError("Init");
+#endif  // PRINT_CUDA_ERROR
 }
 
 __global__ void calculateST(float* positions, float* velocity, float* externForce, float* old_positions, float* prev_positions, float* last_Positions,
@@ -168,8 +175,8 @@ void PDSolverData::runCalculateIF(float m_volumnStiffness) {
 #endif  //  PRINT_CUDA_ERROR
 }
 
-__global__ void calculatePOS(float* positions, float* force, float* fixed, float* mass, float* next_positions, float* prev_positions, float* old_positions,
-                             float* volumnDiag, int vertexNum, float m_dt, float omega) {
+__global__ void calculatePOS(float* positions, float* fixed, float* mass, float* next_positions, float* prev_positions, float* old_positions, float* volumnDiag,
+                             float* force, float* collisionDiag, float* collisionForce, int vertexNum, float m_dt, float omega) {
     unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
     if (threadid >= vertexNum) return;
 
@@ -178,19 +185,21 @@ __global__ void calculatePOS(float* positions, float* force, float* fixed, float
     int indexZ = threadid * 3 + 2;
     float fixflag = fixed[threadid];
     float diagConstant = (mass[threadid]) / (m_dt * m_dt);
-    float forceLen = sqrt(force[indexX] * force[indexX] + force[indexY] * force[indexY] + force[indexZ] * force[indexZ]);
 
     // 计算每个点的shape match产生的约束部分，因为之前是按照每个四面体计算的，现在要摊到每个顶点上
-    float elementX = force[indexX];
-    float elementY = force[indexY];
-    float elementZ = force[indexZ];
+    float elementX = force[indexX] + collisionForce[indexX];
+    float elementY = force[indexY] + collisionForce[indexY];
+    float elementZ = force[indexZ] + collisionForce[indexZ];
 
     next_positions[indexX] =
-        (diagConstant * (old_positions[indexX] - positions[indexX]) + elementX) / (volumnDiag[threadid] + diagConstant) * fixflag + positions[indexX];
+        (diagConstant * (old_positions[indexX] - positions[indexX]) + elementX) / (volumnDiag[threadid] + collisionDiag[indexX] + diagConstant) * fixflag +
+        positions[indexX];
     next_positions[indexY] =
-        (diagConstant * (old_positions[indexY] - positions[indexY]) + elementY) / (volumnDiag[threadid] + diagConstant) * fixflag + positions[indexY];
+        (diagConstant * (old_positions[indexY] - positions[indexY]) + elementY) / (volumnDiag[threadid] + collisionDiag[indexY] + diagConstant) * fixflag +
+        positions[indexY];
     next_positions[indexZ] =
-        (diagConstant * (old_positions[indexZ] - positions[indexZ]) + elementZ) / (volumnDiag[threadid] + diagConstant) * fixflag + positions[indexZ];
+        (diagConstant * (old_positions[indexZ] - positions[indexZ]) + elementZ) / (volumnDiag[threadid] + collisionDiag[indexZ] + diagConstant) * fixflag +
+        positions[indexZ];
 
     // under-relaxation 和 切比雪夫迭代
     next_positions[indexX] = (next_positions[indexX] - positions[indexX]) * 0.6 + positions[indexX];
@@ -214,8 +223,8 @@ __global__ void calculatePOS(float* positions, float* force, float* fixed, float
 void PDSolverData::runcalculatePOS(float omega, float m_dt) {
     int threadNum = 512;
     int blockNum = (tetVertNum + threadNum - 1) / threadNum;
-    calculatePOS<<<blockNum, threadNum>>>(tetVertPos_d, tetVertForce_d, tetVertFixed_d, tetVertMass_d, tetVertPos_next_d, tetVertPos_prev_d, tetVertPos_old_d,
-                                          tetVolumeDiag_d, tetVertNum, m_dt, omega);
+    calculatePOS<<<blockNum, threadNum>>>(tetVertPos_d,  tetVertFixed_d, tetVertMass_d, tetVertPos_next_d, tetVertPos_prev_d, tetVertPos_old_d, tetVolumeDiag_d,
+                                          tetVertForce_d,tetVertCollisionDiag_d, tetVertCollisionForce_d, tetVertNum, m_dt, omega);
 
 #ifdef PRINT_CUDA_ERROR
     cudaDeviceSynchronize();
@@ -252,6 +261,60 @@ void PDSolverData::runResetPosVel() {
 }
 
 void PDSolverData::runSaveVel() { cudaMemcpy(tetVertVelocityBak_d, tetVertVelocity_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToDevice); }
+
+__global__ void DCDByPoint_sphere(Point3D center, float radius, int vertexNum, float* positions, float* directDir, float collisionStiffness, char* isCollied,
+                                  float* collisionDiag, float* collisionForce) {
+    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (threadid >= vertexNum) return;
+
+    int xId = threadid * 3 + 0;
+    int yId = threadid * 3 + 1;
+    int zId = threadid * 3 + 2;
+    Point3D p = {positions[xId], positions[yId], positions[zId]};
+    Point3D cp = p - center;
+
+    Point3D dir = cp / vectorLength(cp);
+    if (directDir != nullptr) dir = {directDir[xId], directDir[yId], directDir[zId]};
+
+    float distance = vectorLength(cp);
+    if (distance < radius) {
+        // (cp + t * dir)^2 = r^2
+        float a = 1;
+        float b = 2 * dotProduct(cp, dir);
+        float c = dotProduct(cp, cp) - radius * radius;
+        float t = (-b + sqrt(b * b - 4 * a * c)) / (2 * a);
+        Point3D colP = p + dir * t;
+        Point3D centerColP = colP - center;
+        Point3D colN = centerColP / vectorLength(centerColP);
+        float colNDotDir = dotProduct(colN, dir);
+
+        isCollied[threadid] = 1;
+        collisionDiag[xId] += collisionStiffness * colN.x * colN.x;
+        collisionDiag[yId] += collisionStiffness * colN.y * colN.y;
+        collisionDiag[zId] += collisionStiffness * colN.z * colN.z;
+        collisionForce[xId] += collisionStiffness * t * colNDotDir * colN.x;
+        collisionForce[yId] += collisionStiffness * t * colNDotDir * colN.y;
+        collisionForce[zId] += collisionStiffness * t * colNDotDir * colN.z;
+    }
+}
+
+void PDSolverData::runDCDByPoint_sphere(Point3D center, float radius, float collisionStiffness) {
+    int threadNum = 512;
+    int blockNum = (tetVertNum + threadNum - 1) / threadNum;
+    DCDByPoint_sphere<<<blockNum, threadNum>>>(center, radius, tetVertNum, tetVertPos_d, nullptr, collisionStiffness, tetVertIsCollied_d,
+                                               tetVertCollisionDiag_d, tetVertCollisionForce_d);
+
+#ifdef PRINT_CUDA_ERROR
+    cudaDeviceSynchronize();
+    printCudaError("runDCDByPoint_sphere");
+#endif  //  PRINT_CUDA_ERROR
+}
+
+void PDSolverData::runClearCollision() {
+    cudaMemset(tetVertIsCollied_d, 0, tetVertNum * sizeof(char));
+    cudaMemset(tetVertCollisionDiag_d, 0, tetVertNum * 3 * sizeof(float));
+    cudaMemset(tetVertCollisionForce_d, 0, tetVertNum * 3 * sizeof(float));
+}
 
 __global__ void interpolate(int tetVertNumFine, float* tetVertPosFine, float* tetVertPosPrevFine, float* tetVertPosCoarse, int* interpolationIds,
                             float* interpolationWights) {
@@ -466,7 +529,7 @@ void PDSolverData::runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, 
         }
     }
 
-    if (calEveryVertEp){
+    if (calEveryVertEp) {
         float maxEpDensity = -FLT_MAX;
         float minEpDensity = FLT_MAX;
         for (int i = 0; i < tetVertNum; i++) {
@@ -474,6 +537,6 @@ void PDSolverData::runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, 
             maxEpDensity = max(maxEpDensity, g_simulator->m_tetVertEpDensity[i]);
             minEpDensity = min(minEpDensity, g_simulator->m_tetVertEpDensity[i]);
         }
-        //printf("maxEpDensity = %f, minEpDensity = %f\n", maxEpDensity, minEpDensity);
+        // printf("maxEpDensity = %f, minEpDensity = %f\n", maxEpDensity, minEpDensity);
     }
 }
