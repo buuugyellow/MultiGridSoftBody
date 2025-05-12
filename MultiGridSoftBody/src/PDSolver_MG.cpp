@@ -46,7 +46,7 @@ void PDSolver_MG::interpolate() {
                 }
                 Point3D center = (A + B + C + D) / 4.0f;
                 Point3D centerP = P - center;
-                float dis = vectorLength(centerP);
+                float dis = length(centerP);
                 maxDistance = max(maxDistance, dis);
                 found = true;
                 break;
@@ -111,7 +111,7 @@ void PDSolver_MG::Init(const vector<float> tetVertPosCoarse, const vector<int>& 
     //            Point3D p = {tetVertPosFine[vIdFine * 3 + 0], tetVertPosFine[vIdFine * 3 + 1], tetVertPosFine[vIdFine * 3 + 2]};
     //            Point3D center = {tetCenterCoarse[tIdCoarse * 3 + 0], tetCenterCoarse[tIdCoarse * 3 + 1], tetCenterCoarse[tIdCoarse * 3 + 2]};
     //            Point3D centerP = p - center;
-    //            float dis = vectorLength(centerP);
+    //            float dis = length(centerP);
     //            maxDistance = max(maxDistance, dis);
     //            found = true;
     //            break;  // 不用继续遍历其他的四面体
@@ -156,7 +156,7 @@ void PDSolver_MG::Init(const vector<float> tetVertPosCoarse, const vector<int>& 
                 Point3D p = {tetVertPosCoarse[vIdCoarse * 3 + 0], tetVertPosCoarse[vIdCoarse * 3 + 1], tetVertPosCoarse[vIdCoarse * 3 + 2]};
                 Point3D center = {tetCenterFine[tIdFine * 3 + 0], tetCenterFine[tIdFine * 3 + 1], tetCenterFine[tIdFine * 3 + 2]};
                 Point3D centerP = p - center;
-                float dis = vectorLength(centerP);
+                float dis = length(centerP);
                 maxDistance = max(maxDistance, dis);
                 found = true;
                 break;  // 不用继续遍历其他的四面体

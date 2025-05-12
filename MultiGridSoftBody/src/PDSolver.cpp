@@ -117,7 +117,7 @@ void PDSolver::InitVolumeConstraint() {
             }
 
             // ¼ÆËãÃæ»ý
-            double len = vectorLength(normal);
+            double len = length(normal);
             m_tetFaceArea[i * 4 + k] = 0.5 * len;
             assert(fabs(len) > 1e-5);
 
