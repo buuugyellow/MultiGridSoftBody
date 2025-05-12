@@ -6,6 +6,16 @@
 #include "Simulator.h"
 #include "global.h"
 
+#ifdef PRINT_CUDA_ERROR
+#define PRINT_CUDA_ERROR_AFTER(func) \
+    do {                             \
+        cudaDeviceSynchronize();     \
+        printCudaError(func);        \
+    } while (0)
+#else
+#define PRINT_CUDA_ERROR_AFTER(func)
+#endif  // PRINT_CUDA_ERROR
+
 void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
                         float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h) {
     tetNum = tetNum_h;
@@ -44,9 +54,7 @@ void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* 
     cudaMemset(tetVertCollisionDiag_d, 0, tetVertNum * 3 * sizeof(float));
     cudaMalloc((void**)&tetVertCollisionForce_d, tetVertNum * 3 * sizeof(float));
     cudaMemset(tetVertCollisionForce_d, 0, tetVertNum * 3 * sizeof(float));
-#ifdef PRINT_CUDA_ERROR
-    printCudaError("Init");
-#endif  // PRINT_CUDA_ERROR
+    PRINT_CUDA_ERROR_AFTER("Init");
 }
 
 __global__ void calculateST(float* positions, float* velocity, float* externForce, float* old_positions, float* prev_positions, float* last_Positions,
@@ -100,10 +108,7 @@ void PDSolverData::runCalculateST(float m_damping, float m_dt, float m_gravityX,
     int blockNum = (tetVertNum + threadNum - 1) / threadNum;
     calculateST<<<blockNum, threadNum>>>(tetVertPos_d, tetVertVelocity_d, tetVertExternForce_d, tetVertPos_old_d, tetVertPos_prev_d, tetVertPos_last_d,
                                          tetVertFixed_d, m_gravityX, m_gravityY, m_gravityZ, tetVertNum, m_damping, m_dt);
-#ifdef PRINT_CUDA_ERROR
-    cudaDeviceSynchronize();
-    printCudaError("runcalculateST");
-#endif  // PRINT_CUDA_ERROR
+    PRINT_CUDA_ERROR_AFTER("runcalculateST");
 }
 
 void PDSolverData::runClearTemp() { cudaMemset(tetVertForce_d, 0.0f, tetVertNum * 3 * sizeof(float)); }
@@ -169,10 +174,7 @@ void PDSolverData::runCalculateIF(float m_volumnStiffness) {
     int threadNum = 512;
     int blockNum = (tetNum + threadNum - 1) / threadNum;
     calculateIF<<<blockNum, threadNum>>>(tetVertPos_d, tetIndex_d, tetInvD3x3_d, tetInvD3x4_d, tetVertForce_d, tetVolume_d, tetNum, m_volumnStiffness);
-#ifdef PRINT_CUDA_ERROR
-    cudaDeviceSynchronize();
-    printCudaError("runCalculateIF");
-#endif  //  PRINT_CUDA_ERROR
+    PRINT_CUDA_ERROR_AFTER("runCalculateIF");
 }
 
 __global__ void calculatePOS(float* positions, float* fixed, float* mass, float* next_positions, float* prev_positions, float* old_positions, float* volumnDiag,
@@ -223,13 +225,9 @@ __global__ void calculatePOS(float* positions, float* fixed, float* mass, float*
 void PDSolverData::runcalculatePOS(float omega, float m_dt) {
     int threadNum = 512;
     int blockNum = (tetVertNum + threadNum - 1) / threadNum;
-    calculatePOS<<<blockNum, threadNum>>>(tetVertPos_d,  tetVertFixed_d, tetVertMass_d, tetVertPos_next_d, tetVertPos_prev_d, tetVertPos_old_d, tetVolumeDiag_d,
-                                          tetVertForce_d,tetVertCollisionDiag_d, tetVertCollisionForce_d, tetVertNum, m_dt, omega);
-
-#ifdef PRINT_CUDA_ERROR
-    cudaDeviceSynchronize();
-    printCudaError("runCalculatePOS");
-#endif  //  PRINT_CUDA_ERROR
+    calculatePOS<<<blockNum, threadNum>>>(tetVertPos_d, tetVertFixed_d, tetVertMass_d, tetVertPos_next_d, tetVertPos_prev_d, tetVertPos_old_d, tetVolumeDiag_d,
+                                          tetVertForce_d, tetVertCollisionDiag_d, tetVertCollisionForce_d, tetVertNum, m_dt, omega);
+    PRINT_CUDA_ERROR_AFTER("runCalculatePOS");
 }
 
 __global__ void calculateV(float* positions, float* velocity, float* last_positions, int vertexNum, float m_dt) {
@@ -245,10 +243,7 @@ void PDSolverData::runCalculateV(float m_dt) {
     int threadNum = 512;
     int blockNum = (tetVertNum + threadNum - 1) / threadNum;
     calculateV<<<blockNum, threadNum>>>(tetVertPos_d, tetVertVelocity_d, tetVertPos_last_d, tetVertNum, m_dt);
-#ifdef PRINT_CUDA_ERROR
-    cudaDeviceSynchronize();
-    printCudaError("runCalculateV");
-#endif  //  PRINT_CUDA_ERROR
+    PRINT_CUDA_ERROR_AFTER("runCalculateV");
 }
 
 void PDSolverData::runCpyTetVertForRender() {
@@ -303,11 +298,16 @@ void PDSolverData::runDCDByPoint_sphere(Point3D center, float radius, float coll
     int blockNum = (tetVertNum + threadNum - 1) / threadNum;
     DCDByPoint_sphere<<<blockNum, threadNum>>>(center, radius, tetVertNum, tetVertPos_d, nullptr, collisionStiffness, tetVertIsCollied_d,
                                                tetVertCollisionDiag_d, tetVertCollisionForce_d);
+    PRINT_CUDA_ERROR_AFTER("runDCDByPoint_sphere");
+}
 
-#ifdef PRINT_CUDA_ERROR
-    cudaDeviceSynchronize();
-    printCudaError("runDCDByPoint_sphere");
-#endif  //  PRINT_CUDA_ERROR
+__global__ void DCDByTriangle_sphere() {}
+
+void PDSolverData::runDCDByTriangle_sphere(Point3D center, float radius, float collisionStiffness) {
+    int threadNum = 512;
+    int blockNum = (tetVertNum + threadNum - 1) / threadNum;
+    DCDByTriangle_sphere<<<blockNum, threadNum>>>();
+    PRINT_CUDA_ERROR_AFTER("runDCDByTriangle_sphere");
 }
 
 void PDSolverData::runClearCollision() {
@@ -368,10 +368,7 @@ void PDSolver_MG::runInterpolate() {
     updatePointInTet<<<blockNum, threadNum>>>(m_pdSolverFine->m_tetVertNum, m_pdSolverFine->pdSolverData->tetVertPos_d,
                                               m_pdSolverFine->pdSolverData->tetVertPos_prev_d, m_pdSolverCoarse->pdSolverData->tetVertPos_d, interpolationIds_d,
                                               interpolationWights_d);
-#ifdef PRINT_CUDA_ERROR
-    cudaDeviceSynchronize();
-    printCudaError("runInterpolate");
-#endif  //  PRINT_CUDA_ERROR
+    PRINT_CUDA_ERROR_AFTER("runInterpolate");
 }
 
 void PDSolver_MG::runAverage() {
@@ -380,10 +377,7 @@ void PDSolver_MG::runAverage() {
     updatePointInTet<<<blockNum, threadNum>>>(m_pdSolverCoarse->m_tetVertNum, m_pdSolverCoarse->pdSolverData->tetVertPos_d,
                                               m_pdSolverCoarse->pdSolverData->tetVertPos_prev_d, m_pdSolverFine->pdSolverData->tetVertPos_d, averageIds_d,
                                               averageWeights_d);
-#ifdef PRINT_CUDA_ERROR
-    cudaDeviceSynchronize();
-    printCudaError("runAverage");
-#endif  //  PRINT_CUDA_ERROR
+    PRINT_CUDA_ERROR_AFTER("runAverage");
 }
 
 __global__ void updateMapping(int tetVertNumFine, float* tetVertPosFine, int* interpolationIds, float* interpolationWights, float* tetVertPosCoarse) {
@@ -414,10 +408,7 @@ void PDSolver_MG::runUpdateMapping() {
     int blockNum = (m_pdSolverFine->m_tetVertNum + threadNum - 1) / threadNum;
     updateMapping<<<blockNum, threadNum>>>(m_pdSolverFine->m_tetVertNum, m_pdSolverFine->pdSolverData->tetVertPos_d, interpolationIds_d, interpolationWights_d,
                                            m_pdSolverCoarse->pdSolverData->tetVertPos_d);
-#ifdef PRINT_CUDA_ERROR
-    cudaDeviceSynchronize();
-    printCudaError("runUpdateMapping");
-#endif  //  PRINT_CUDA_ERROR
+    PRINT_CUDA_ERROR_AFTER("runUpdateMapping");
 }
 
 //////////////////////////////////////////// test code ////////////////////////////////////////////

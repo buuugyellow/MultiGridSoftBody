@@ -43,6 +43,7 @@ struct PDSolverData {
                       const vector<float>& m_tetVolume, float m_volumnStiffness, float& Ek, float& Ep, float& dX, bool calEveryVertEp = false);
     void runClearCollision();
     void runDCDByPoint_sphere(Point3D center, float radius, float collisionStiffness);
+    void runDCDByTriangle_sphere(Point3D center, float radius, float collisionStiffness);
 };
 
 class PDSolver {
@@ -80,4 +81,5 @@ public:
     void SetFixedVert();
     void RenderOnce();
     void DCDByPoint();
+    void DCDByTriangle();
 };

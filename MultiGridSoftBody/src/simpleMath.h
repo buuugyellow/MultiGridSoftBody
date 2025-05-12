@@ -1,6 +1,7 @@
 #pragma once
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 #include <vector>
 using namespace std;
 __device__ __host__ struct Point3D {

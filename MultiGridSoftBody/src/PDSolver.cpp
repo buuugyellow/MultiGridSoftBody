@@ -200,6 +200,13 @@ void PDSolver::DCDByPoint() {
     }
 }
 
+void PDSolver::DCDByTriangle() { 
+    pdSolverData->runClearCollision();
+    for (auto sphere : g_simulator->m_sphereColliders) {
+        if (sphere->m_active) pdSolverData->runDCDByTriangle_sphere(sphere->m_position, sphere->m_radius, m_collisionStiffness);
+    }
+}
+
 void PDSolver::Step() {
     static float E0 = 0;
     float Ek, Ep, dX, error;
