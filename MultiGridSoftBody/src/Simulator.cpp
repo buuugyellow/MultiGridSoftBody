@@ -44,7 +44,6 @@ void Simulator::Init() {
 
     // 中间变量初始化
     m_tetVertPos = m_softObject->m_tetVertPosORIG;
-    m_tetIdx = m_softObject->m_tetIdxORIG;
     m_tetFaceIdx = m_softObject->m_tetFaceIdx;
     for (int i = 0; i < m_tetVertPos.size() / 3; i++) {
         m_normal.push_back(1.0f);
@@ -59,12 +58,12 @@ void Simulator::Init() {
     switch (g_solverType) {
         case PD:
             m_solver = new PDSolver();
-            m_solver->Init(m_tetIdx, m_tetVertPos);
+            m_solver->Init(m_softObject->m_tetVertPosORIG, m_softObject->m_tetIdxORIG, m_softObject->m_tetFaceIdx);
             break;
         case PD_MG:
             m_solver_mg = new PDSolver_MG();
-            m_solver_mg->Init(m_softObject_coarse->m_tetIdxORIG, m_softObject_coarse->m_tetVertPosORIG, m_softObject->m_tetIdxORIG,
-                              m_softObject->m_tetVertPosORIG);
+            m_solver_mg->Init(m_softObject_coarse->m_tetVertPosORIG, m_softObject_coarse->m_tetIdxORIG, m_softObject_coarse->m_tetFaceIdx,
+                              m_softObject->m_tetVertPosORIG, m_softObject->m_tetIdxORIG, m_softObject->m_tetFaceIdx);
             break;
     }
     LOG(INFO) << "solver: " << g_solverType << " Init 结束";

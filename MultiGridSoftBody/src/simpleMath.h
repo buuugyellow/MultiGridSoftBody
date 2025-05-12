@@ -2,6 +2,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
+
 #include <vector>
 using namespace std;
 __device__ __host__ struct Point3D {
@@ -17,6 +18,7 @@ __device__ __host__ Point3D operator*(const Point3D& a, float b);              /
 __device__ __host__ Point3D crossProduct(const Point3D& a, const Point3D& b);  // 叉乘计算
 __device__ __host__ float dotProduct(const Point3D& a, const Point3D& b);      // 点积计算
 __device__ __host__ float vectorLength(const Point3D& v);                      // 向量模长
+__device__ __host__ void normalize(Point3D& a);                                // 向量归一化
 
 __device__ __host__ void barycentricCoordinate(const Point3D& point, const Point3D& tetVertA, const Point3D& tetVertB, const Point3D& tetVertC,
                                                const Point3D& tetVertD, float* weights);

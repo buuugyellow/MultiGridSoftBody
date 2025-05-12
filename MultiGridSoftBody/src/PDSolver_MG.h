@@ -15,7 +15,8 @@ public:
     float* averageWeights_d;
 
     void interpolate(); // 细网格顶点寻找所在的粗四面体并计算重心坐标
-    void Init(const vector<int>& tetIdxCoarse, const vector<float> tetVertPosCoarse, const vector<int>& tetIdxFine, const vector<float> tetVertPosFine);
+    void Init(const vector<float> tetVertPosCoarse, const vector<int>& tetIdxCoarse, const vector<unsigned int>& tetFaceIdxCoarse,
+              const vector<float> tetVertPosFine, const vector<int>& tetIdxFine, const vector<unsigned int>& tetFaceIdxFine);
     void Step();
     void runInterpolate();
     void runAverage();

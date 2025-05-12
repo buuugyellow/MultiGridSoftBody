@@ -141,7 +141,7 @@ void PDSolver::SetFixedVert() {
     }
 }
 
-void PDSolver::Init(const vector<int>& tetIdx, const vector<float> tetVertPos) {
+void PDSolver::Init(const vector<float> tetVertPos, const vector<int>& tetIdx, const vector<unsigned int>& tetFaceIdx) {
     m_iterNum = 32;
     m_iterNumCvg = 128;
     m_dt = 1.0f / 30.0f;
@@ -154,6 +154,8 @@ void PDSolver::Init(const vector<int>& tetIdx, const vector<float> tetVertPos) {
     m_gravityZ = 0.0f;
 
     m_tetIndex = tetIdx;
+    m_outsideTriIndex = tetFaceIdx;
+    m_outsideTriNum = m_outsideTriIndex.size() / 3;
     m_tetVertPos = tetVertPos;
     m_tetNum = m_tetIndex.size() / 4;
     m_tetVertNum = m_tetVertPos.size() / 3;
@@ -164,7 +166,7 @@ void PDSolver::Init(const vector<int>& tetIdx, const vector<float> tetVertPos) {
     SetFixedVert();
     pdSolverData = new PDSolverData();
     pdSolverData->Init(m_tetNum, m_tetVertNum, m_tetIndex.data(), m_tetInvD3x3.data(), m_tetInvD3x4.data(), m_tetVolume.data(), m_tetVolumeDiag.data(),
-                       m_tetVertMass.data(), m_tetVertFixed.data(), m_tetVertPos.data());
+                       m_tetVertMass.data(), m_tetVertFixed.data(), m_tetVertPos.data(), m_outsideTriNum, m_outsideTriIndex.data());
     LOG(INFO) << "pdSolverData Init ½áÊø";
 }
 
@@ -202,6 +204,7 @@ void PDSolver::DCDByPoint() {
 
 void PDSolver::DCDByTriangle() { 
     pdSolverData->runClearCollision();
+    pdSolverData->runUpdateTriNormal();
     for (auto sphere : g_simulator->m_sphereColliders) {
         if (sphere->m_active) pdSolverData->runDCDByTriangle_sphere(sphere->m_position, sphere->m_radius, m_collisionStiffness);
     }
@@ -225,6 +228,7 @@ void PDSolver::Step() {
     for (int i = 0; i < m_iterNum; i++) {
         pdSolverData->runClearTemp();
         DCDByPoint();
+        //DCDByTriangle();
         pdSolverData->runCalculateIF(m_volumnStiffness);
         omega = 4 / (4 - m_rho * m_rho * omega);
         pdSolverData->runcalculatePOS(omega, m_dt);
@@ -242,5 +246,6 @@ void PDSolver::Step() {
     fprintf(timeOutputFile, "%d,%f\n", g_stepCnt, duration_physical);
 
     pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, dX, true);
+    pdSolverData->runUpdateOutsideTetVertNormal();
     RenderOnce();
 }

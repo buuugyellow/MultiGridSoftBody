@@ -17,7 +17,6 @@ public:
     PDSolver_MG* m_solver_mg;
 
     vector<float> m_tetVertPos;         // 这里需要复制一份顶点数据是用于与解算器解耦
-    vector<int> m_tetIdx;               // 同上
     vector<unsigned int> m_tetFaceIdx;  // 用于控制渲染的三角形索引
     vector<float> m_normal;             // 所有四面体顶点都分配法向量，如果有需要可以用于碰撞检测
 

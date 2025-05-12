@@ -17,13 +17,18 @@
 #endif  // PRINT_CUDA_ERROR
 
 void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
-                        float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h) {
+                        float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h, int outsideTriNum_h, unsigned int* outsideTriIndex_h) {
     tetNum = tetNum_h;
     tetVertNum = tetVertNum_h;
+    outsideTriNum = outsideTriNum_h;
     cudaMalloc((void**)&tetVertPos_d, tetVertNum * 3 * sizeof(float));
     cudaMemcpy(tetVertPos_d, tetVertPos_h, tetVertNum * 3 * sizeof(float), cudaMemcpyHostToDevice);
     cudaMalloc((void**)&tetIndex_d, tetNum * 4 * sizeof(int));
     cudaMemcpy(tetIndex_d, tetIndex_h, tetNum * 4 * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&outsideTriIndex_d, outsideTriNum * 3 * sizeof(unsigned int));
+    cudaMemcpy(outsideTriIndex_d, outsideTriIndex_h, outsideTriNum * 3 * sizeof(unsigned int), cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&outsideTriNormal_d, outsideTriNum * 3 * sizeof(float));
+    cudaMalloc((void**)&tetVertNormal_d, tetVertNum * 3 * sizeof(float));
     cudaMalloc((void**)&tetInvD3x3_d, tetNum * 9 * sizeof(float));
     cudaMemcpy(tetInvD3x3_d, tetInvD3x3_h, tetNum * 9 * sizeof(float), cudaMemcpyHostToDevice);
     cudaMalloc((void**)&tetInvD3x4_d, tetNum * 12 * sizeof(float));
@@ -248,6 +253,7 @@ void PDSolverData::runCalculateV(float m_dt) {
 
 void PDSolverData::runCpyTetVertForRender() {
     cudaMemcpy(g_simulator->m_tetVertPos.data(), tetVertPos_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(g_simulator->m_normal.data(), tetVertNormal_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
 }
 
 void PDSolverData::runResetPosVel() {
@@ -257,7 +263,7 @@ void PDSolverData::runResetPosVel() {
 
 void PDSolverData::runSaveVel() { cudaMemcpy(tetVertVelocityBak_d, tetVertVelocity_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToDevice); }
 
-__global__ void DCDByPoint_sphere(Point3D center, float radius, int vertexNum, float* positions, float* directDir, float collisionStiffness, char* isCollied,
+__global__ void DCDByPoint_sphere(Point3D center, float radius, float collisionStiffness, int vertexNum, float* positions, float* directDir, char* isCollied,
                                   float* collisionDiag, float* collisionForce) {
     unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
     if (threadid >= vertexNum) return;
@@ -296,17 +302,87 @@ __global__ void DCDByPoint_sphere(Point3D center, float radius, int vertexNum, f
 void PDSolverData::runDCDByPoint_sphere(Point3D center, float radius, float collisionStiffness) {
     int threadNum = 512;
     int blockNum = (tetVertNum + threadNum - 1) / threadNum;
-    DCDByPoint_sphere<<<blockNum, threadNum>>>(center, radius, tetVertNum, tetVertPos_d, nullptr, collisionStiffness, tetVertIsCollied_d,
+    DCDByPoint_sphere<<<blockNum, threadNum>>>(center, radius, collisionStiffness, tetVertNum, tetVertPos_d, nullptr, tetVertIsCollied_d,
                                                tetVertCollisionDiag_d, tetVertCollisionForce_d);
     PRINT_CUDA_ERROR_AFTER("runDCDByPoint_sphere");
 }
 
-__global__ void DCDByTriangle_sphere() {}
+__global__ void UpdateTriNormal(int outsideTriNum, float* positions, unsigned int* outsideTriIndex, float* outsideTriNormal, float* tetVertNormal) {
+    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (threadid >= outsideTriNum) return;
+
+    unsigned int idA = outsideTriIndex[threadid * 3 + 0];
+    unsigned int idB = outsideTriIndex[threadid * 3 + 1];
+    unsigned int idC = outsideTriIndex[threadid * 3 + 2];
+    Point3D A = {positions[idA * 3 + 0], positions[idA * 3 + 1], positions[idA * 3 + 2]};
+    Point3D B = {positions[idB * 3 + 0], positions[idB * 3 + 1], positions[idB * 3 + 2]};
+    Point3D C = {positions[idC * 3 + 0], positions[idC * 3 + 1], positions[idC * 3 + 2]};
+    Point3D AB = B - A;
+    Point3D AC = C - A;
+    Point3D ABCrossAC = crossProduct(AB, AC);
+    normalize(ABCrossAC);
+    float x = ABCrossAC.x;
+    float y = ABCrossAC.y;
+    float z = ABCrossAC.z;
+    outsideTriNormal[threadid * 3 + 0] = x;
+    outsideTriNormal[threadid * 3 + 1] = y;
+    outsideTriNormal[threadid * 3 + 2] = z;
+    
+    // 直接平均所在的三角形法向量，加权可以考虑：1. 面积 2. 角度
+    atomicAdd(tetVertNormal + idA * 3 + 0, x);
+    atomicAdd(tetVertNormal + idA * 3 + 1, y);
+    atomicAdd(tetVertNormal + idA * 3 + 2, z);
+    atomicAdd(tetVertNormal + idB * 3 + 0, x);
+    atomicAdd(tetVertNormal + idB * 3 + 1, y);
+    atomicAdd(tetVertNormal + idB * 3 + 2, z);
+    atomicAdd(tetVertNormal + idC * 3 + 0, x);
+    atomicAdd(tetVertNormal + idC * 3 + 1, y);
+    atomicAdd(tetVertNormal + idC * 3 + 2, z);
+}
+
+__global__ void AvgOutsideTetVertNormal(int tetVertNum, float* tetVertNormal) {
+    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (threadid >= tetVertNum) return;
+
+    Point3D dir = {tetVertNormal[threadid * 3 + 0], tetVertNormal[threadid * 3 + 1], tetVertNormal[threadid * 3 + 2]};
+    float len = vectorLength(dir);
+    if (len > 1.0f - 1e-5f) {
+        tetVertNormal[threadid * 3 + 0] /= len;
+        tetVertNormal[threadid * 3 + 1] /= len;
+        tetVertNormal[threadid * 3 + 2] /= len;
+    } else if (len > 1e-5f) {
+        printf("[ERROR]顶点法向量的模长应为 0 或者大于等于 1\n");
+    }
+}
+
+void PDSolverData::runUpdateTriNormal() {
+    int threadNum = 512;
+    int blockNum = (outsideTriNum + threadNum - 1) / threadNum;
+    UpdateTriNormal<<<blockNum, threadNum>>>(outsideTriNum, tetVertPos_d, outsideTriIndex_d, outsideTriNormal_d, tetVertNormal_d);
+    PRINT_CUDA_ERROR_AFTER("runUpdateTriNormal");
+}
+
+void PDSolverData::runClearTetVertNormal() { cudaMemset(tetVertNormal_d, 0, tetVertNum * 3 * sizeof(float)); }
+
+void PDSolverData::runAvgOutsideTetVertNormal() {
+    int threadNum = 512;
+    int blockNum = (tetVertNum + threadNum - 1) / threadNum;
+    AvgOutsideTetVertNormal<<<blockNum, threadNum>>>(tetVertNum, tetVertNormal_d);
+    PRINT_CUDA_ERROR_AFTER("runAvgOutsideTetVertNormal");
+}
+
+void PDSolverData::runUpdateOutsideTetVertNormal() { 
+    runClearTetVertNormal();
+    runUpdateTriNormal();
+    runAvgOutsideTetVertNormal();
+}
+
+__global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisionStiffness) {}
 
 void PDSolverData::runDCDByTriangle_sphere(Point3D center, float radius, float collisionStiffness) {
     int threadNum = 512;
-    int blockNum = (tetVertNum + threadNum - 1) / threadNum;
-    DCDByTriangle_sphere<<<blockNum, threadNum>>>();
+    int blockNum = (outsideTriNum + threadNum - 1) / threadNum;
+    //DCDByTriangle_sphere<<<blockNum, threadNum>>>();
     PRINT_CUDA_ERROR_AFTER("runDCDByTriangle_sphere");
 }
 

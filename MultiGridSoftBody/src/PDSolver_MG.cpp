@@ -57,12 +57,12 @@ void PDSolver_MG::interpolate() {
     LOG(INFO) << "绑定的细四面体顶点与粗四面体重心之间的最大距离 = " << maxDistance;
 }
 
-void PDSolver_MG::Init(const vector<int>& tetIdxCoarse, const vector<float> tetVertPosCoarse, const vector<int>& tetIdxFine,
-                       const vector<float> tetVertPosFine) {
+void PDSolver_MG::Init(const vector<float> tetVertPosCoarse, const vector<int>& tetIdxCoarse, const vector<unsigned int>& tetFaceIdxCoarse,
+                       const vector<float> tetVertPosFine, const vector<int>& tetIdxFine, const vector<unsigned int>& tetFaceIdxFine) {
     m_pdSolverCoarse = new PDSolver();
     m_pdSolverFine = new PDSolver();
-    m_pdSolverCoarse->Init(tetIdxCoarse, tetVertPosCoarse);
-    m_pdSolverFine->Init(tetIdxFine, tetVertPosFine);
+    m_pdSolverCoarse->Init(tetVertPosCoarse, tetIdxCoarse, tetFaceIdxCoarse);
+    m_pdSolverFine->Init(tetVertPosFine, tetIdxFine, tetFaceIdxFine);
     // 建立粗细网格之间的映射关系
     m_interpolationIds.resize(m_pdSolverFine->m_tetVertNum * 4);
     m_interpolationWights.resize(m_pdSolverFine->m_tetVertNum * 4);
@@ -103,7 +103,6 @@ void PDSolver_MG::Init(const vector<int>& tetIdxCoarse, const vector<float> tetV
     //                m_interpolationIds[vIdFine * 4 + ii] = tetVertIdInATet[ii];
     //                m_interpolationWights[vIdFine * 4 + ii] = lambdas[ii];
     //            }
-
     //            // test
     //            for (int ii = 0; ii < 4; ii++) {
     //                float l = lambdas[ii];

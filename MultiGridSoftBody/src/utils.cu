@@ -270,6 +270,11 @@ __device__ __host__ float dotProduct(const Point3D& a, const Point3D& b) { retur
 
 __device__ __host__ float vectorLength(const Point3D& v) { return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z); }
 
+__device__ __host__ void normalize(Point3D& a) {
+    float len = vectorLength(a);
+    a = a / len;
+}
+
 __device__ __host__ bool pointInTet(const float* tetVertPos, const float* tetFaceNormal, const float* point) {
     const Point3D P = {point[0], point[1], point[2]};
     for (int k = 0; k < 4; k++) {
