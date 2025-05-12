@@ -274,10 +274,10 @@ __global__ void DCDByPoint_sphere(Point3D center, float radius, float collisionS
     Point3D p = {positions[xId], positions[yId], positions[zId]};
     Point3D cp = p - center;
 
-    Point3D dir = cp / vectorLength(cp);
+    Point3D dir = cp / length(cp);
     if (directDir != nullptr) dir = {directDir[xId], directDir[yId], directDir[zId]};
 
-    float distance = vectorLength(cp);
+    float distance = length(cp);
     if (distance < radius) {
         // (cp + t * dir)^2 = r^2
         float a = 1;
@@ -286,7 +286,7 @@ __global__ void DCDByPoint_sphere(Point3D center, float radius, float collisionS
         float t = (-b + sqrt(b * b - 4 * a * c)) / (2 * a);
         Point3D colP = p + dir * t;
         Point3D centerColP = colP - center;
-        Point3D colN = centerColP / vectorLength(centerColP);
+        Point3D colN = centerColP / length(centerColP);
         float colNDotDir = dotProduct(colN, dir);
 
         isCollied[threadid] = 1;
@@ -340,21 +340,6 @@ __global__ void UpdateTriNormal(int outsideTriNum, float* positions, unsigned in
     atomicAdd(tetVertNormal + idC * 3 + 2, z);
 }
 
-__global__ void AvgOutsideTetVertNormal(int tetVertNum, float* tetVertNormal) {
-    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (threadid >= tetVertNum) return;
-
-    Point3D dir = {tetVertNormal[threadid * 3 + 0], tetVertNormal[threadid * 3 + 1], tetVertNormal[threadid * 3 + 2]};
-    float len = vectorLength(dir);
-    if (len > 1.0f - 1e-5f) {
-        tetVertNormal[threadid * 3 + 0] /= len;
-        tetVertNormal[threadid * 3 + 1] /= len;
-        tetVertNormal[threadid * 3 + 2] /= len;
-    } else if (len > 1e-5f) {
-        printf("[ERROR]顶点法向量的模长应为 0 或者大于等于 1\n");
-    }
-}
-
 void PDSolverData::runUpdateTriNormal() {
     int threadNum = 512;
     int blockNum = (outsideTriNum + threadNum - 1) / threadNum;
@@ -363,6 +348,21 @@ void PDSolverData::runUpdateTriNormal() {
 }
 
 void PDSolverData::runClearTetVertNormal() { cudaMemset(tetVertNormal_d, 0, tetVertNum * 3 * sizeof(float)); }
+
+__global__ void AvgOutsideTetVertNormal(int tetVertNum, float* tetVertNormal) {
+    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (threadid >= tetVertNum) return;
+
+    Point3D dir = {tetVertNormal[threadid * 3 + 0], tetVertNormal[threadid * 3 + 1], tetVertNormal[threadid * 3 + 2]};
+    float len = length(dir);
+    if (len > 1.0f - 1e-5f) {
+        tetVertNormal[threadid * 3 + 0] /= len;
+        tetVertNormal[threadid * 3 + 1] /= len;
+        tetVertNormal[threadid * 3 + 2] /= len;
+    } else if (len > 1e-5f) {
+        printf("[ERROR]顶点法向量的模长应为 0 或者大于等于 1\n");
+    }
+}
 
 void PDSolverData::runAvgOutsideTetVertNormal() {
     int threadNum = 512;
@@ -377,7 +377,29 @@ void PDSolverData::runUpdateOutsideTetVertNormal() {
     runAvgOutsideTetVertNormal();
 }
 
-__global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisionStiffness) {}
+__global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisionStiffness, int outsideTriNum, float* positions, unsigned int* outsideTriIndex,
+                                     float* outsideTriNormal) {
+    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (threadid >= outsideTriNum) return;
+
+    unsigned int idA = outsideTriIndex[threadid * 3 + 0];
+    unsigned int idB = outsideTriIndex[threadid * 3 + 1];
+    unsigned int idC = outsideTriIndex[threadid * 3 + 2];
+    Point3D A = {positions[idA * 3 + 0], positions[idA * 3 + 1], positions[idA * 3 + 2]};
+    Point3D B = {positions[idB * 3 + 0], positions[idB * 3 + 1], positions[idB * 3 + 2]};
+    Point3D C = {positions[idC * 3 + 0], positions[idC * 3 + 1], positions[idC * 3 + 2]};
+    Point3D triNormal = {outsideTriNormal[threadid * 3 + 0], outsideTriNormal[threadid * 3 + 1], outsideTriNormal[threadid * 3 + 2]};
+    Point3D sphereDir = {-triNormal.x, -triNormal.y, -triNormal.z};
+
+    // 1. 判断球是否与三角形相交，如果不相交则退出
+    // 2. 判断球射线是否与三角形对应平面相交
+    // 3. 判断球射线是否与三条边所对应的圆柱体相交（取大的解就是外面的半圆柱）
+    // 4. 判断球射线是否与三个顶点所对应的球面相交（取大的解就是外面的球面）
+
+    if (!sphereIntersectTri(center, radius, A, B, C)) return;
+    
+
+}
 
 void PDSolverData::runDCDByTriangle_sphere(Point3D center, float radius, float collisionStiffness) {
     int threadNum = 512;

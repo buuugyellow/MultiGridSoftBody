@@ -268,10 +268,12 @@ __device__ __host__ Point3D operator*(const Point3D& a, float b) { return {a.x *
 
 __device__ __host__ float dotProduct(const Point3D& a, const Point3D& b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
 
-__device__ __host__ float vectorLength(const Point3D& v) { return std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z); }
+__device__ __host__ float lengthSq(const Point3D& v) { return v.x * v.x + v.y * v.y + v.z * v.z; }
+
+__device__ __host__ float length(const Point3D& v) { return sqrt(v.x * v.x + v.y * v.y + v.z * v.z); }
 
 __device__ __host__ void normalize(Point3D& a) {
-    float len = vectorLength(a);
+    float len = length(a);
     a = a / len;
 }
 
@@ -335,10 +337,73 @@ __device__ __host__ void barycentricCoordinate(const Point3D& point, const Point
             normal.z = -normal.z;
         }
 
-        float len = vectorLength(normal);
+        float len = length(normal);
         float area = len * 0.5f;
         normal = normal / len;
 
         weights[i] = 0.25f - dotProduct(point - center, normal) * area / (3 * V);
     }
+}
+
+__device__ __host__ bool pointInTriangle(const Point3D& P, const Point3D& A, const Point3D& B, const Point3D& C) {
+    Point3D v0 = C - A;
+    Point3D v1 = B - A;
+    Point3D v2 = P - A;
+
+    float dot00 = dotProduct(v0, v0);
+    float dot01 = dotProduct(v0, v1);
+    float dot02 = dotProduct(v0, v2);
+    float dot11 = dotProduct(v1, v1);
+    float dot12 = dotProduct(v1, v2);
+
+    // 计算重心坐标
+    float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
+    float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+    float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+    return (u >= 0) && (v >= 0) && (u + v <= 1.0f);
+}
+
+__device__ __host__ float closestPointOnSegment(const Point3D& P, const Point3D& A, const Point3D& B, Point3D& closest) {
+    Point3D AB = B - A;
+    float t = dotProduct((P - A), AB) / lengthSq(AB);
+    t = fmaxf(0.0f, fminf(1.0f, t));  // 夹紧到线段内
+    closest = A + AB * t;
+    return lengthSq(P - closest);
+}
+
+__device__ __host__ bool sphereIntersectTri(const Point3D& center, float radius, const Point3D& A, const Point3D& B, const Point3D& C) {
+    // 不同于计算射线与三角形闵可夫斯基差的交点，点与胶囊体的距离比射线与胶囊体的交点好求，一步即可
+    // 1. 球心到平面的距离，如果距离大于 radius 返回 false
+    // 2. 求点到平面的投影点，如果投影点在三角形内则返回 true
+    // 3. 分别判断点到三条边所在直线的距离是否小于 radius，如果小于则返回 true
+
+    // ---- Step 1: 计算球心到平面的距离 ----
+    Point3D AB = B - A;
+    Point3D AC = C - A;
+    Point3D normal = crossProduct(AB, AC);  // 平面法向量
+
+    float normalLengthSq = lengthSq(normal);
+    if (normalLengthSq < 1e-6f) {
+        printf("[ERROR] normalLengthSq < 1e-6f, 三角形退化\n");
+        return false;
+    }
+
+    float D = -dotProduct(normal, A);  // 平面方程: normal.x*x + normal.y*y + normal.z*z + D = 0
+    float distance = fabsf(dotProduct(normal, center) + D) / sqrtf(normalLengthSq);
+
+    if (distance > radius) return false;
+
+    // ---- Step 2: 检查投影点是否在三角形内 ----
+    Point3D projected = center - normal * (dotProduct(normal, center) + D) / normalLengthSq);
+    if (pointInTriangle(projected, A, B, C)) return true;
+
+    // ---- Step 3: 检查三条边 ----
+    const float radiusSq = radius * radius;
+    Point3D closest;
+    if (closestPointOnSegment(center, A, B, closest) <= radiusSq) return true;
+    if (closestPointOnSegment(center, B, C, closest) <= radiusSq) return true;
+    if (closestPointOnSegment(center, C, A, closest) <= radiusSq) return true;
+
+    return false;
 }
