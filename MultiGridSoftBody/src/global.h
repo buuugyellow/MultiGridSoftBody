@@ -9,6 +9,7 @@ using namespace std;
 extern string config_objName;
 extern string config_objName_coarse;
 extern string config_dataDir;
+extern string config_tempDir;
 extern FILE* timeOutputFile;
 extern FILE* energyOutputFile;
 extern FILE* energyStepFile;

@@ -17,6 +17,7 @@
 using namespace std;
 
 string config_dataDir;
+string config_tempDir;
 string config_objName;  // 单一物体
 string config_objName_coarse;
 string config_timeOutputCsv;
@@ -131,7 +132,7 @@ void fileIO() {
     } else {
         fprintf(timeOutputFile, "step,duration\n");
     }
-    
+
     if (config_writeOrReadEnergy) {
         err = fopen_s(&energyStepFile, config_energyStepOutCsv.c_str(), "w+");
         if (err) {
@@ -177,7 +178,7 @@ void initRenderSyn() {
     g_simulator->m_softObject->m_renderObjId = g_render->CreatePBRObj(g_simulator->m_softObject->m_name, 0.6, 0.5, 0.4, 0.2, 0.3);
 
     for (int i = 0; i < g_simulator->m_sphereColliders.size(); i++) {
-        auto sphere = g_simulator->m_sphereColliders[i]; 
+        auto sphere = g_simulator->m_sphereColliders[i];
         sphere->m_renderObjId = g_render->CreatePBRObj("sphere_" + to_string(i), 0, 1, 0, 1, 1);
     }
 }
@@ -195,7 +196,6 @@ void renderOnce() {
     }
     g_render->UpdateMesh(g_simulator->m_softObject->m_renderObjId, g_simulator->m_tetFaceIdx.size(), g_simulator->m_tetFaceIdx.size() * sizeof(unsigned int),
                          g_simulator->m_tetFaceIdx.data(), vertNum * 9 * sizeof(float), g_pointsNormalsUVForRender.data());
-
 
     // 更新碰撞体
     for (auto sphere : g_simulator->m_sphereColliders) {
@@ -231,20 +231,21 @@ void renderOnce() {
 
 void init() {
     config_dataDir = "../data/";
+    config_tempDir = "../temp/";
     config_objName = "Y_1_10_1";  // 单一物体
     config_objName_coarse = "cube40_4_4";
     g_synOrAsy = true;
     g_solverType = PD;
-    FLAGS_log_dir = "../temp/log/";
-    config_timeOutputCsv = "../temp/time.csv";
-    config_energyOutputCsv = "../temp/energy.csv";
-    config_energyStepInCsv = "../data/120_256iter.csv";
-    config_energyStepOutCsv = "../temp/energyStepOut.csv";
+    FLAGS_log_dir = config_tempDir + "log/";
+    config_timeOutputCsv = config_tempDir + "time.csv";
+    config_energyOutputCsv = config_tempDir + "energy.csv";
+    config_energyStepInCsv = config_dataDir + "120_256iter.csv";
+    config_energyStepOutCsv = config_tempDir + "energyStepOut.csv";
     config_writeOrReadEnergy = false;
     FLAGS_logtostderr = true;
     FLAGS_stderrthreshold = 0;
     google::InitGoogleLogging("MultiGridSoftBody");
-    
+
     fileIO();
     initCuda();
     g_simulator = &Simulator::GetInstance();
@@ -261,7 +262,7 @@ int main() {
     if (g_synOrAsy) {  // 同步
         initRenderSyn();
         while (true) g_simulator->Update();
-    } else { // 异步
+    } else {  // 异步
         initRenderAsy();
         while (true) {
             g_simulator->Update();

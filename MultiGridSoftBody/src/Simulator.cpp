@@ -21,7 +21,8 @@ void Simulator::Init() {
     string name = config_objName;
     string objFile = config_dataDir + name + ".obj";
     string tetFile = config_dataDir + name;
-    m_softObject = new SoftObject(name, objFile, tetFile);
+    string tetFaceFile = config_tempDir + name + ".obj";
+    m_softObject = new SoftObject(name, objFile, tetFile, tetFaceFile);
     m_softObject->ReadFromFile();
     LOG(INFO) << "ReadFromFile ½áÊø";
     m_softObject->TetFaceExtraction();
@@ -31,7 +32,8 @@ void Simulator::Init() {
     string name_coarse = config_objName_coarse;
     string objFile_coarse = config_dataDir + name_coarse + ".obj";
     string tetFile_coarse = config_dataDir + name_coarse;
-    m_softObject_coarse = new SoftObject(name_coarse, objFile_coarse, tetFile_coarse);
+    string tetFaceFile_coarse = config_tempDir + name_coarse + ".obj";
+    m_softObject_coarse = new SoftObject(name_coarse, objFile_coarse, tetFile_coarse, tetFaceFile_coarse);
     m_softObject_coarse->ReadFromFile();
     LOG(INFO) << "coarse ReadFromFile ½áÊø";
     m_softObject_coarse->TetFaceExtraction();

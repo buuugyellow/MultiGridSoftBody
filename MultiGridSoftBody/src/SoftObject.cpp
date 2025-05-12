@@ -243,5 +243,5 @@ void SoftObject::TetFaceExtraction() {
     // Êä³öobj²é¿´
     std::vector<unsigned int> idx;
     idx.assign(m_tetFaceIdx.begin(), m_tetFaceIdx.end());
-    OutputPosNormIndex("../temp/outsideFace.obj", m_tetVertPosORIG, std::vector<float>(), idx);
+    OutputPosNormIndex(m_tetFaceFile, m_tetVertPosORIG, std::vector<float>(), idx);
 }
