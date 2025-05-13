@@ -58,5 +58,7 @@ __device__ __host__ bool pointInTriangle(const Point3D& P, const Point3D& A, con
 __device__ __host__ float closestPointOnSegment(const Point3D& P, const Point3D& A, const Point3D& B, Point3D& closest);
 // 球与三角形是否相交
 __device__ __host__ bool sphereIntersectTri(const Point3D& center, float radius, const Point3D& A, const Point3D& B, const Point3D& C);
+// 点是否在线段的垂直范围内，如果提供了 radius，则返回点是否在圆柱体内
+__device__ __host__ bool isOnCylinderSegment(const Point3D& P, const Point3D& A, const Point3D& B, float radius = -1);
 
 void CreateSphere(float radius, int slices, int segments, vector<float>& verts, vector<unsigned int>& indices, const vector<float>& center);

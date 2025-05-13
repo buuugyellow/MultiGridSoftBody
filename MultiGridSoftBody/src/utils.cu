@@ -407,3 +407,16 @@ __device__ __host__ bool sphereIntersectTri(const Point3D& center, float radius,
 
     return false;
 }
+
+__device__ __host__ bool isOnCylinderSegment(const Point3D& P, const Point3D& A, const Point3D& B, float radius) {
+    Point3D edgeDir = B - A;
+    float len = length(edgeDir);
+    normalize(edgeDir);
+    Point3D AP = P - A;
+    float t = dotProduct(AP, edgeDir);
+    if (radius < 0) return (t > 0 && t < len);
+
+    Point3D projectionPoint = A + edgeDir * t;
+    float distance = length(P - projectionPoint);
+    return distance < radius;
+}

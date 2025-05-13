@@ -393,12 +393,96 @@ __global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisi
 
     // 1. 判断球是否与三角形相交，如果不相交则退出
     // 2. 判断球射线是否与三角形对应平面相交
-    // 3. 判断球射线是否与三条边所对应的圆柱体相交（取大的解就是外面的半圆柱）
-    // 4. 判断球射线是否与三个顶点所对应的球面相交（取大的解就是外面的球面）
+    // 3. 判断球射线是否与三条边所对应的圆柱体相交（如果正向交点是外面的半圆柱则找到）
+    // 4. 判断球射线是否与三个顶点所对应的球面相交（如果正向交点是外面的球面则找到）
 
+    // ---- Step 1: 计算球是否与三角形相交 ----
     if (!sphereIntersectTri(center, radius, A, B, C)) return;
-    
+    // 在这里测试碰撞检测的正确性 TODO
 
+    // ---- Step 2: 计算球心射线与两个三角面是否相交 ----
+    Point3D planePos = A + triNormal * radius;                                                  // 正向扩展平面
+    Point3D planeNeg = A - triNormal * radius;                                                  // 负向扩展平面
+    float t_pos = dotProduct(planePos - center, triNormal) / dotProduct(sphereDir, triNormal);  // 计算射线与两个平面的交点
+    float t_neg = dotProduct(planeNeg - center, triNormal) / dotProduct(sphereDir, triNormal);  // 计算射线与两个平面的交点
+    float t;
+    Point3D AA, BB, CC;
+    if (t_pos > 0) { // 因为前面已经判定过相交，因此这里肯定一正一负
+        t = t_pos;
+        AA = A + triNormal * radius;
+        BB = B + triNormal * radius;
+        CC = C + triNormal * radius;
+    } else {
+        t = t_neg;
+        AA = A - triNormal * radius;
+        BB = B - triNormal * radius;
+        CC = C - triNormal * radius;
+    }    
+    Point3D hit = center + sphereDir * t;  // 筛选有效交点（t>0 且在三角形内）
+    bool valid = pointInTriangle(hit, AA, BB, CC);
+    if (valid) {
+        // TODO
+
+        return;
+    }
+
+    Point3D triVerts[3] = {A, B, C};
+    // ---- Step 3: 计算球心射线与三个圆柱面是否相交 ----
+    for (int i = 0; i < 3; i++) {
+        Point3D& Begin = triVerts[i];
+        Point3D& End = triVerts[(i + 1) % 3];
+        Point3D edgeDir = End - Begin;
+        normalize(edgeDir);
+        Point3D localCenter = center - Begin;
+        float a = dotProduct(sphereDir, sphereDir) - pow(dotProduct(sphereDir, edgeDir), 2);
+        float b = 2 * (dotProduct(localCenter, sphereDir) - dotProduct(localCenter, edgeDir) * dotProduct(sphereDir, edgeDir));
+        float c = dotProduct(localCenter, localCenter) - pow(dotProduct(localCenter, edgeDir), 2) - radius * radius;
+        float discriminant = b * b - 4 * a * c;
+        if (discriminant > -FLT_EPSILON) { // 射线与无限长圆柱相交
+            float t_cyl = (-b + sqrt(discriminant)) / (2 * a);  // 取较大解（靠近外侧）
+            Point3D hit = center + sphereDir * t_cyl; // 射线与圆柱面的正向交点，判断：交点是否在线段范围内且交点是否在外表面
+            if (t_cyl > 0 && isOnCylinderSegment(hit, Begin, End)) {
+                Point3D projectedHit = hit - triNormal * dotProduct((hit - A), triNormal); // 投影到三角形平面
+                Point3D Other = triVerts[(i + 2) % 3];
+                Point3D BE = End - Begin;
+                Point3D BO = Other - Begin;
+                Point3D BH = projectedHit - Begin;
+                Point3D BECrossBO = crossProduct(BE, BO);
+                Point3D BECrossBH = crossProduct(BE, BH);
+                bool valid = (dotProduct(BECrossBO, BECrossBH) < 0);
+                if (valid) {
+                    // TODO
+
+                    return;
+                }
+            }
+        }
+
+    }
+
+    // ---- Step 4: 计算球心射线与三个球面是否相交 ----
+    for (int i = 0; i < 3; i++) {
+        Point3D& V = triVerts[i];
+        Point3D VO = center - V;
+        float a = dotProduct(sphereDir, sphereDir);
+        float b = 2 * dotProduct(sphereDir, VO);
+        float c = dotProduct(VO, VO) - radius * radius;
+        float discriminant = b * b - 4 * a * c;
+        if (discriminant > -FLT_EPSILON) { // 射线与球相交
+            float t = (-b + sqrtf(discriminant)) / (2 * a); // 取大的解
+            if (t > 0) { 
+                Point3D hit = center + sphereDir * t;
+                Point3D& A = triVerts[(i + 1) % 3];
+                Point3D& B = triVerts[(i + 2) % 3];
+                bool valid = !isOnCylinderSegment(hit, V, A) && !isOnCylinderSegment(hit, V, B);
+                if (valid) {
+                    // TODO
+
+                    return;
+                }
+            }
+        }
+    }
 }
 
 void PDSolverData::runDCDByTriangle_sphere(Point3D center, float radius, float collisionStiffness) {
