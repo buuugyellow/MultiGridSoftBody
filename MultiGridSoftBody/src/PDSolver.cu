@@ -385,8 +385,8 @@ void PDSolverData::runUpdateOutsideTetVertNormal() {
 }
 
 __device__ void DCDByTriangle_sphere_response(unsigned int threadid, float* positions, unsigned int* outsideTriIndex, const Point3D& center, float radius,
-                                              const Point3D& hit, int* isCollied, float* collisionDiag, float* collisionForce, int* triIsCollided,
-                                              float* triColProjectVector) {
+                                              const Point3D& hit, float collisionStiffness, int* isCollied, float* collisionDiag, float* collisionForce,
+                                              int* triIsCollided, float* triColProjectVector) {
     triIsCollided[threadid] = 1;
     Point3D moveVec = center - hit;
     triColProjectVector[threadid * 3 + 0] = moveVec.x;
@@ -398,6 +398,24 @@ __device__ void DCDByTriangle_sphere_response(unsigned int threadid, float* posi
     atomicAdd(isCollied + idA, 1);
     atomicAdd(isCollied + idB, 1);
     atomicAdd(isCollied + idC, 1);
+    atomicAdd(collisionDiag + idA * 3 + 0, collisionStiffness);
+    atomicAdd(collisionDiag + idA * 3 + 1, collisionStiffness);
+    atomicAdd(collisionDiag + idA * 3 + 2, collisionStiffness);
+    atomicAdd(collisionDiag + idB * 3 + 0, collisionStiffness);
+    atomicAdd(collisionDiag + idB * 3 + 1, collisionStiffness);
+    atomicAdd(collisionDiag + idB * 3 + 2, collisionStiffness);
+    atomicAdd(collisionDiag + idC * 3 + 0, collisionStiffness);
+    atomicAdd(collisionDiag + idC * 3 + 1, collisionStiffness);
+    atomicAdd(collisionDiag + idC * 3 + 2, collisionStiffness);
+    atomicAdd(collisionForce + idA * 3 + 0, collisionStiffness * moveVec.x);
+    atomicAdd(collisionForce + idA * 3 + 1, collisionStiffness * moveVec.y);
+    atomicAdd(collisionForce + idA * 3 + 2, collisionStiffness * moveVec.z);
+    atomicAdd(collisionForce + idB * 3 + 0, collisionStiffness * moveVec.x);
+    atomicAdd(collisionForce + idB * 3 + 1, collisionStiffness * moveVec.y);
+    atomicAdd(collisionForce + idB * 3 + 2, collisionStiffness * moveVec.z);
+    atomicAdd(collisionForce + idC * 3 + 0, collisionStiffness * moveVec.x);
+    atomicAdd(collisionForce + idC * 3 + 1, collisionStiffness * moveVec.y);
+    atomicAdd(collisionForce + idC * 3 + 2, collisionStiffness * moveVec.z);
 }
 
 __global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisionStiffness, int outsideTriNum, float* positions, unsigned int* outsideTriIndex,
@@ -446,8 +464,8 @@ __global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisi
     bool valid = pointInTriangle(hit, AA, BB, CC);
     if (valid) {
         // TODO
-        DCDByTriangle_sphere_response(threadid, positions, outsideTriIndex, center, radius, hit, isCollied, collisionDiag, collisionForce, triIsCollided,
-                                      triColProjectVector);
+        DCDByTriangle_sphere_response(threadid, positions, outsideTriIndex, center, radius, hit, collisionStiffness, isCollied, collisionDiag, collisionForce,
+                                      triIsCollided, triColProjectVector);
         return;
     }
 
@@ -477,8 +495,8 @@ __global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisi
                 bool valid = (dotProduct(BECrossBO, BECrossBH) < 0);
                 if (valid) {
                     // TODO
-                    DCDByTriangle_sphere_response(threadid, positions, outsideTriIndex, center, radius, hit, isCollied, collisionDiag, collisionForce,
-                                                  triIsCollided, triColProjectVector);
+                    DCDByTriangle_sphere_response(threadid, positions, outsideTriIndex, center, radius, hit, collisionStiffness, isCollied, collisionDiag,
+                                                  collisionForce, triIsCollided, triColProjectVector);
                     return;
                 }
             }
@@ -502,8 +520,8 @@ __global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisi
                 bool valid = !isOnCylinderSegment(hit, V, A) && !isOnCylinderSegment(hit, V, B);
                 if (valid) {
                     // TODO
-                    DCDByTriangle_sphere_response(threadid, positions, outsideTriIndex, center, radius, hit, isCollied, collisionDiag, collisionForce,
-                                                  triIsCollided, triColProjectVector);
+                    DCDByTriangle_sphere_response(threadid, positions, outsideTriIndex, center, radius, hit, collisionStiffness, isCollied, collisionDiag,
+                                                  collisionForce, triIsCollided, triColProjectVector);
                     return;
                 }
             }
