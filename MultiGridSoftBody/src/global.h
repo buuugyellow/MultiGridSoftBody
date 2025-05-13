@@ -33,6 +33,7 @@ extern SolverType g_solverType;
 extern double duration_physical;
 extern bool g_UIShowMesh;
 extern bool g_UIShowParticle;
+extern bool g_UIEnergeOrCllisioin;
 extern float g_UIParticleR;
 
 void renderOnce();

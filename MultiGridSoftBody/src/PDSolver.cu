@@ -53,8 +53,8 @@ void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* 
     cudaMemset(tetVertExternForce_d, 0, tetVertNum * 3 * sizeof(float));
     cudaMalloc((void**)&tetVertForce_d, tetVertNum * 3 * sizeof(float));
     cudaMemset(tetVertForce_d, 0, tetVertNum * 3 * sizeof(float));
-    cudaMalloc((void**)&tetVertIsCollied_d, tetVertNum * sizeof(char));
-    cudaMemset(tetVertIsCollied_d, 0, tetVertNum * sizeof(char));
+    cudaMalloc((void**)&tetVertIsCollied_d, tetVertNum * sizeof(int));
+    cudaMemset(tetVertIsCollied_d, 0, tetVertNum * sizeof(int));
     cudaMalloc((void**)&tetVertCollisionDiag_d, tetVertNum * 3 * sizeof(float));
     cudaMemset(tetVertCollisionDiag_d, 0, tetVertNum * 3 * sizeof(float));
     cudaMalloc((void**)&tetVertCollisionForce_d, tetVertNum * 3 * sizeof(float));
@@ -254,6 +254,7 @@ void PDSolverData::runCalculateV(float m_dt) {
 void PDSolverData::runCpyTetVertForRender() {
     cudaMemcpy(g_simulator->m_tetVertPos.data(), tetVertPos_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
     cudaMemcpy(g_simulator->m_normal.data(), tetVertNormal_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(g_simulator->m_tetVertIsCollide.data(), tetVertIsCollied_d, tetVertNum * sizeof(int), cudaMemcpyDeviceToHost);
 }
 
 void PDSolverData::runResetPosVel() {
@@ -263,7 +264,7 @@ void PDSolverData::runResetPosVel() {
 
 void PDSolverData::runSaveVel() { cudaMemcpy(tetVertVelocityBak_d, tetVertVelocity_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToDevice); }
 
-__global__ void DCDByPoint_sphere(Point3D center, float radius, float collisionStiffness, int vertexNum, float* positions, float* directDir, char* isCollied,
+__global__ void DCDByPoint_sphere(Point3D center, float radius, float collisionStiffness, int vertexNum, float* positions, float* directDir, int* isCollied,
                                   float* collisionDiag, float* collisionForce) {
     unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
     if (threadid >= vertexNum) return;
@@ -377,8 +378,18 @@ void PDSolverData::runUpdateOutsideTetVertNormal() {
     runAvgOutsideTetVertNormal();
 }
 
+__device__ void DCDByTriangle_sphere_response(unsigned int threadid, float* positions, unsigned int* outsideTriIndex, const Point3D& center, float radius,
+                                              const Point3D& hit, int* isCollied, float* collisionDiag, float* collisionForce) {
+    unsigned int idA = outsideTriIndex[threadid * 3 + 0];
+    unsigned int idB = outsideTriIndex[threadid * 3 + 1];
+    unsigned int idC = outsideTriIndex[threadid * 3 + 2];
+    atomicAdd(isCollied + idA, 1);
+    atomicAdd(isCollied + idB, 1);
+    atomicAdd(isCollied + idC, 1);
+}
+
 __global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisionStiffness, int outsideTriNum, float* positions, unsigned int* outsideTriIndex,
-                                     float* outsideTriNormal) {
+                                     float* outsideTriNormal, int* isCollied, float* collisionDiag, float* collisionForce) {
     unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
     if (threadid >= outsideTriNum) return;
 
@@ -422,7 +433,7 @@ __global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisi
     bool valid = pointInTriangle(hit, AA, BB, CC);
     if (valid) {
         // TODO
-
+        DCDByTriangle_sphere_response(threadid, positions, outsideTriIndex, center, radius, hit, isCollied, collisionDiag, collisionForce);
         return;
     }
 
@@ -452,12 +463,11 @@ __global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisi
                 bool valid = (dotProduct(BECrossBO, BECrossBH) < 0);
                 if (valid) {
                     // TODO
-
+                    DCDByTriangle_sphere_response(threadid, positions, outsideTriIndex, center, radius, hit, isCollied, collisionDiag, collisionForce);
                     return;
                 }
             }
         }
-
     }
 
     // ---- Step 4: 计算球心射线与三个球面是否相交 ----
@@ -477,7 +487,7 @@ __global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisi
                 bool valid = !isOnCylinderSegment(hit, V, A) && !isOnCylinderSegment(hit, V, B);
                 if (valid) {
                     // TODO
-
+                    DCDByTriangle_sphere_response(threadid, positions, outsideTriIndex, center, radius, hit, isCollied, collisionDiag, collisionForce);
                     return;
                 }
             }
@@ -488,12 +498,13 @@ __global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisi
 void PDSolverData::runDCDByTriangle_sphere(Point3D center, float radius, float collisionStiffness) {
     int threadNum = 512;
     int blockNum = (outsideTriNum + threadNum - 1) / threadNum;
-    //DCDByTriangle_sphere<<<blockNum, threadNum>>>();
+    DCDByTriangle_sphere<<<blockNum, threadNum>>>(center, radius, collisionStiffness, outsideTriNum, tetVertPos_d, outsideTriIndex_d, outsideTriNormal_d,
+                                                  tetVertIsCollied_d, tetVertCollisionDiag_d, tetVertCollisionForce_d);
     PRINT_CUDA_ERROR_AFTER("runDCDByTriangle_sphere");
 }
 
 void PDSolverData::runClearCollision() {
-    cudaMemset(tetVertIsCollied_d, 0, tetVertNum * sizeof(char));
+    cudaMemset(tetVertIsCollied_d, 0, tetVertNum * sizeof(int));
     cudaMemset(tetVertCollisionDiag_d, 0, tetVertNum * 3 * sizeof(float));
     cudaMemset(tetVertCollisionForce_d, 0, tetVertNum * 3 * sizeof(float));
 }

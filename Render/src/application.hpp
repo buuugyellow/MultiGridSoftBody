@@ -51,6 +51,8 @@ public:
 
 	void SetActive(int i, bool active);
 
+	void SetWireframe(int i, bool wireframe);
+
 	int CreatePBRObj(std::string name, float r, float g, float b, float metallic, float roughness);
 
 	void SetTransparentColor(int objId, float r, float g, float b, float a);

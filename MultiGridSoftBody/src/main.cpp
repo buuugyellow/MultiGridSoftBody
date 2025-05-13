@@ -209,18 +209,24 @@ void renderOnce() {
         g_posColorForRender[i * 6 + 1] = g_simulator->m_tetVertPos[i * 3 + 1];
         g_posColorForRender[i * 6 + 2] = g_simulator->m_tetVertPos[i * 3 + 2];
 
-        // maxEpDensity = 102.653015, minEpDensity = -172.211227 120_12_12
-        // maxEpDensity = 75.676262, minEpDensity = -98.100319 60_6_6
-        // maxEpDensity = 74.737572, minEpDensity = -93.356651 40_4_4 为什么不一样？
-        float EpDensity = g_simulator->m_tetVertEpDensity[i];
-        float EpMapValue;
-        EpMapValue = (EpDensity > 0) ? (1 - pow(2, -EpDensity) / 2) : (pow(2, EpDensity) / 2);
-        Point3D colorBegin = {0, 1, 0};
-        Point3D colorEnd = {1, 0, 0};
-        Point3D color = colorBegin + (colorEnd - colorBegin) * EpMapValue;
+        Point3D color;
+        if (g_UIEnergeOrCllisioin) {
+            // maxEpDensity = 102.653015, minEpDensity = -172.211227 120_12_12
+            // maxEpDensity = 75.676262, minEpDensity = -98.100319 60_6_6
+            // maxEpDensity = 74.737572, minEpDensity = -93.356651 40_4_4 为什么不一样？
+            float EpDensity = g_simulator->m_tetVertEpDensity[i];
+            float EpMapValue;
+            EpMapValue = (EpDensity > 0) ? (1 - pow(2, -EpDensity) / 2) : (pow(2, EpDensity) / 2);
+            Point3D colorBegin = {0, 1, 0};
+            Point3D colorEnd = {1, 0, 0};
+            color = colorBegin + (colorEnd - colorBegin) * EpMapValue;
+        } else {
+            int isCollided = g_simulator->m_tetVertIsCollide[i];
+            color = (isCollided > 0) ? Point3D(1, 0, 0) : Point3D(0, 1, 0);
+        }
         g_posColorForRender[i * 6 + 3] = color.x;
         g_posColorForRender[i * 6 + 4] = color.y;
-        g_posColorForRender[i * 6 + 5] = color.z;
+        g_posColorForRender[i * 6 + 5] = color.z; 
     }
     g_render->UpdatePartical(vertNum, g_posColorForRender.data());
 

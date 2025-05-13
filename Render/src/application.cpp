@@ -100,6 +100,8 @@ void Application::SetActive(int i, bool active) {
 	m_renderer->m_sceneobject->m_meshes[i]->m_draw = active;
 }
 
+void Application::SetWireframe(int i, bool wireframe) { m_renderer->m_sceneobject->m_meshes[i]->m_wireframe = wireframe; }
+
 void Application::InitRender(std::string& hdrfile, std::string& shaderfolder, std::string& name, void(*doUICallBack)()) {
 	m_renderer = new Renderer();
 	m_renderer->m_name = name;

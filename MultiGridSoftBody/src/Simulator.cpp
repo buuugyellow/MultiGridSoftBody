@@ -53,6 +53,7 @@ void Simulator::Init() {
     m_tetVertEpDensity.resize(m_tetVertPos.size() / 3);
     m_tetVertEpSum.resize(m_tetVertPos.size() / 3);
     m_tetVertVSum.resize(m_tetVertPos.size() / 3);
+    m_tetVertIsCollide.resize(m_tetVertPos.size() / 3);
 
     // Ω‚À„∆˜≥ı ºªØ
     switch (g_solverType) {

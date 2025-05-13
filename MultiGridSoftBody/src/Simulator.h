@@ -28,6 +28,7 @@ public:
     vector<float> m_tetVertEpDensity;  // 四面体顶点的能量密度
     vector<float> m_tetVertEpSum;      // 所有顶点相关联的四面体的能量的总和
     vector<float> m_tetVertVSum;       // 所有顶点相关联的四面体的体积的总和
+    vector<int> m_tetVertIsCollide;   // 四面体顶点碰撞
 
     static Simulator& GetInstance();  // 获取单例对象
     void Init();                      // 初始化

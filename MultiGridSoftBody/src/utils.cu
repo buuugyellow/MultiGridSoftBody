@@ -395,7 +395,7 @@ __device__ __host__ bool sphereIntersectTri(const Point3D& center, float radius,
     if (distance > radius) return false;
 
     // ---- Step 2: 检查投影点是否在三角形内 ----
-    Point3D projected = center - normal * (dotProduct(normal, center) + D) / normalLengthSq);
+    Point3D projected = center - normal * ((dotProduct(normal, center) + D) / normalLengthSq);
     if (pointInTriangle(projected, A, B, C)) return true;
 
     // ---- Step 3: 检查三条边 ----

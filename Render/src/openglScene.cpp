@@ -85,7 +85,9 @@ void Mesh::draw(Utility::ArcballCamera* cam, int new_program)
 	
 	glBindVertexArray(m_buffer.vao);
 
+	if (m_wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	glDrawElements(GL_TRIANGLES, m_buffer.numElements, GL_UNSIGNED_INT, 0);
+    if (m_wireframe) glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	if (!new_program && m_material->m_wireframe)
 	{

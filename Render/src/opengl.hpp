@@ -152,6 +152,7 @@ class Mesh
 {
 public:
 	bool m_draw = true;
+    bool m_wireframe = false;
 	MeshBuffer m_buffer;
 	std::shared_ptr<Material> m_material;
 	std::shared_ptr<Material> m_materialTransparent;
@@ -198,7 +199,7 @@ struct SphereRenderBuffers {
 class Scene
 {
 public:
-	bool m_drawTransparent = false;
+	bool m_drawTransparent = true;
 	std::string m_shaderFolder = "../../shader/";
 	std::string m_hdrfile = "clear_sky_dome_4k.hdr";
 	MeshBuffer m_skybox;
