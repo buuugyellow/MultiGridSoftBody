@@ -47,7 +47,6 @@
     <ClInclude Include="..\3rd\imgui\imstb_truetype.h" />
     <ClInclude Include="src\Collider.h" />
     <ClInclude Include="src\PDSolver.h" />
-    <ClInclude Include="src\gui.h" />
     <ClInclude Include="src\PDSolver_MG.h" />
     <ClInclude Include="src\simpleMath.h" />
     <ClInclude Include="src\Simulator.h" />

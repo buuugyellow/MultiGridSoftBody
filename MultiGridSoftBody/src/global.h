@@ -36,6 +36,7 @@ extern bool g_UIShowParticle;
 extern bool g_UIEnergeOrCllisioin;
 extern float g_UIParticleR;
 
+void doUI();
 void renderOnce();
 void printCudaError(const char* funcName);
 void OutputPosNormIndex(string filepath, vector<float> pos, vector<float> norm, vector<unsigned int> index);
