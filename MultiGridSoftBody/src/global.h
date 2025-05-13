@@ -35,8 +35,10 @@ extern bool g_UIShowMesh;
 extern bool g_UIShowParticle;
 extern bool g_UIEnergeOrCllisioin;
 extern float g_UIParticleR;
+extern int g_key;
 
 void doUI();
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void renderOnce();
 void printCudaError(const char* funcName);
 void OutputPosNormIndex(string filepath, vector<float> pos, vector<float> norm, vector<unsigned int> index);

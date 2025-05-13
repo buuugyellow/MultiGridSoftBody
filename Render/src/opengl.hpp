@@ -199,7 +199,7 @@ struct SphereRenderBuffers {
 class Scene
 {
 public:
-	bool m_drawTransparent = true;
+	bool m_drawTransparent = false;
 	std::string m_shaderFolder = "../../shader/";
 	std::string m_hdrfile = "clear_sky_dome_4k.hdr";
 	MeshBuffer m_skybox;

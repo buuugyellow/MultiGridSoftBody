@@ -227,8 +227,8 @@ void PDSolver::Step() {
     float omega = 1.0f;
     for (int i = 0; i < m_iterNum; i++) {
         pdSolverData->runClearTemp();
-        DCDByPoint();
-        //DCDByTriangle();
+        //DCDByPoint();
+        DCDByTriangle();
         pdSolverData->runCalculateIF(m_volumnStiffness);
         omega = 4 / (4 - m_rho * m_rho * omega);
         pdSolverData->runcalculatePOS(omega, m_dt);

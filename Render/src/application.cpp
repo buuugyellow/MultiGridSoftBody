@@ -102,7 +102,8 @@ void Application::SetActive(int i, bool active) {
 
 void Application::SetWireframe(int i, bool wireframe) { m_renderer->m_sceneobject->m_meshes[i]->m_wireframe = wireframe; }
 
-void Application::InitRender(std::string& hdrfile, std::string& shaderfolder, std::string& name, void(*doUICallBack)()) {
+void Application::InitRender(std::string& hdrfile, std::string& shaderfolder, std::string& name, void (*doUICallBack)(),
+                             void (*keyCallback)(GLFWwindow* window, int key, int scancode, int action, int mods)) {
 	m_renderer = new Renderer();
 	m_renderer->m_name = name;
 	m_renderer -> doUICallBack = doUICallBack;
@@ -111,7 +112,7 @@ void Application::InitRender(std::string& hdrfile, std::string& shaderfolder, st
 	glfwSetCursorPosCallback(m_window, Application::mousePositionCallback);
 	glfwSetMouseButtonCallback(m_window, Application::mouseButtonCallback);
 	glfwSetScrollCallback(m_window, Application::mouseScrollCallback);
-	glfwSetKeyCallback(m_window, Application::keyCallback);
+	glfwSetKeyCallback(m_window, keyCallback);
 	ImguiHelper::Instance()->init(m_window);
 	m_renderer->m_sceneobject->m_hdrfile = hdrfile;
 	m_renderer->m_sceneobject->m_shaderFolder = shaderfolder;
@@ -202,38 +203,6 @@ void Application::mouseScrollCallback(GLFWwindow* window, double xoffset, double
 	Application::Instance()->getCamera()->inputMouseScroll(yoffset > 0 ? 120 : -120);
 }
 	
-void Application::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-	if(action == GLFW_PRESS) {
-		switch (key) {
-		case GLFW_KEY_ESCAPE:
-			Application::Instance()->m_running = false;
-		case GLFW_KEY_F1:
-			LoadCam("../data/cam1.txt");
-			break;
-		case GLFW_KEY_F2:
-            LoadCam("../data/cam2.txt");
-			break;
-		case GLFW_KEY_F3:
-            LoadCam("../data/cam3.txt");
-			break;
-		case GLFW_KEY_F11:
-			SaveCam();
-			break;
-		case GLFW_KEY_H:
-			Application::Instance()->getRenderer()->m_doUI = !Application::Instance()->getRenderer()->m_doUI;
-			break;
-		case GLFW_KEY_S:
-			Application::Instance()->m_step = true;
-		case GLFW_KEY_B:
-			Application::Instance()->m_burn = true;
-			
-		}
-	}
-
-}
-
-
 void Application::SaveCam() {
 	FILE* fid = fopen("cam.txt","w");
 	if (!fid)

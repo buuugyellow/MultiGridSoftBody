@@ -87,7 +87,7 @@ void renderLoop() {
     string shaderFolder = "../shader/";
     string hdrfile = "env1.hdr";
     string name = "MultiGridSoftBody";
-    g_render->InitRender(hdrfile, shaderFolder, name, doUI);
+    g_render->InitRender(hdrfile, shaderFolder, name, doUI, keyCallback);
     // bindRenderObjs(); // 如果这个定义在全局，渲染线程会找不到这个函数
     float ssoaparas[8] = {2.0f, 1.5f, 0.9f, 0.9f, 0.009f, 2.8f};
     g_render->SetSSAOParas(ssoaparas);
@@ -168,7 +168,7 @@ void initRenderSyn() {
     string shaderFolder = "../shader/";
     string hdrfile = "env1.hdr";
     string name = "MultiGridSoftBody";
-    g_render->InitRender(hdrfile, shaderFolder, name, doUI);
+    g_render->InitRender(hdrfile, shaderFolder, name, doUI, keyCallback);
     ImGuiContext* ctx = g_render->GetImGuiContext();
     ImGui::SetCurrentContext(ctx);
     float ssoaparas[8] = {2.0f, 1.5f, 0.9f, 0.9f, 0.009f, 2.8f};

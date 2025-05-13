@@ -4,6 +4,7 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 #include "global.h"
+#include "glfw/include/GLFW/glfw3.h"
 
 using namespace std;
 
@@ -12,6 +13,30 @@ bool g_UIWireframe = false;
 bool g_UIShowParticle = true;
 bool g_UIEnergeOrCllisioin = false;
 float g_UIParticleR = 0.05f;
+int g_key = 0;
+
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (action == GLFW_PRESS) {
+        g_key = key;
+        switch (key) {
+            case GLFW_KEY_F1:
+                Application::LoadCam("../data/cam1.txt");
+                break;
+            case GLFW_KEY_F2:
+                Application::LoadCam("../data/cam2.txt");
+                break;
+            case GLFW_KEY_F3:
+                Application::LoadCam("../data/cam3.txt");
+                break;
+            case GLFW_KEY_F11:
+                Application::SaveCam();
+                break;
+            case GLFW_KEY_H:
+                g_render->getRenderer()->m_doUI = !g_render->getRenderer()->m_doUI;
+                break;
+        }
+    }
+}
 
 void doUI() {
     // UI ¸üÐÂ

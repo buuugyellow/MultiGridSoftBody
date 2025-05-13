@@ -23,14 +23,17 @@ class OS_API Application
 {
 public:
 
-	bool m_step = true;
-	bool m_running = true;
-	bool m_burn = false;
+	//bool m_step = true;
+	//bool m_running = true;
+	//bool m_burn = false;
+ //   int m_key = 0;
+ //   bool m_keyCB = true;
 	Application();
 	~Application();
 
 
-	void InitRender(std::string& hdrfile, std::string& shaderfolder, std::string& name, void(*doUICallBack)());
+	void InitRender(std::string& hdrfile, std::string& shaderfolder, std::string& name, void (*doUICallBack)(),
+                    void (*keyCallback)(GLFWwindow* window, int key, int scancode, int action, int mods));
 
 	ImGuiContext* GetImGuiContext();
 
@@ -69,8 +72,6 @@ public:
 
 	void SetSSAOParas(float* p);
 
-
-
 	static void SaveCam();
 	static void LoadCam(const char* name);
 
@@ -91,7 +92,7 @@ private:
 	static void mousePositionCallback(GLFWwindow* window, double xpos, double ypos);
 	static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 	static void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+	//static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 
 	GLFWwindow* m_window;

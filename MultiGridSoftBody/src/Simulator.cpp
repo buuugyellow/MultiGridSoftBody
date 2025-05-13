@@ -2,6 +2,7 @@
 #include "Simulator.h"
 #include "PDSolver.h"
 #include "global.h"
+#include "glfw/include/GLFW/glfw3.h"
 
 #include <iostream>
 #include <set>
@@ -40,7 +41,7 @@ void Simulator::Init() {
     LOG(INFO) << "coarse TetFaceExtraction 结束";
 
     // 碰撞体初始化
-    m_sphereColliders.push_back(shared_ptr<SphereCollider>(new SphereCollider({-5, 0, 0}, 5)));
+    m_sphereColliders.push_back(shared_ptr<SphereCollider>(new SphereCollider({-5, 0, 0}, 1)));
 
     // 中间变量初始化
     m_tetVertPos = m_softObject->m_tetVertPosORIG;
@@ -71,26 +72,52 @@ void Simulator::Init() {
 }
 
 void Simulator::UpdateCollider() {
-    for (auto sphere : m_sphereColliders) {
-        sphere->Update(Point3D(0.05f, 0, 0));
+    //for (auto sphere : m_sphereColliders) {
+    //    sphere->Update(Point3D(0.05f, 0, 0));
+    //}
+
+    float delta = 0.05f;
+    if (!m_sphereColliders.empty()) {
+        auto sphere = m_sphereColliders[0];
+        switch (g_key) {
+            case GLFW_KEY_W:
+                sphere->Update(Point3D(0, 0, -delta));
+                break;
+            case GLFW_KEY_S:
+                sphere->Update(Point3D(0, 0, delta));
+                break;
+            case GLFW_KEY_A:
+                sphere->Update(Point3D(-delta, 0, 0));
+                break;
+            case GLFW_KEY_D:
+                sphere->Update(Point3D(delta, 0, 0));
+                break;
+            case GLFW_KEY_Q:
+                sphere->Update(Point3D(0, delta, 0));
+                break;
+            case GLFW_KEY_Z:
+                sphere->Update(Point3D(0, -delta, 0));
+                break;
+        }
     }
+    g_key = 0;
 }
 
 void Simulator::Update() {
-    if (g_stepCnt > 240) {
-        if (timeOutputFile) {
-            fclose(timeOutputFile);
-            timeOutputFile = nullptr;
-        }
-        if (energyOutputFile) {
-            fclose(energyOutputFile);
-            energyOutputFile = nullptr;
-        }
-        renderOnce();
-        return;
-    }
-    g_stepCnt++;
-    cout << "step frame " << g_stepCnt << endl;
+    //if (g_stepCnt > 240) {
+    //    if (timeOutputFile) {
+    //        fclose(timeOutputFile);
+    //        timeOutputFile = nullptr;
+    //    }
+    //    if (energyOutputFile) {
+    //        fclose(energyOutputFile);
+    //        energyOutputFile = nullptr;
+    //    }
+    //    renderOnce();
+    //    return;
+    //}
+    //g_stepCnt++;
+    //cout << "step frame " << g_stepCnt << endl;
     UpdateCollider();
     switch (g_solverType) {
         case PD:
