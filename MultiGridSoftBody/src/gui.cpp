@@ -16,8 +16,8 @@ float g_UIParticleR = 0.05f;
 int g_key = 0;
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    g_key = key;
     if (action == GLFW_PRESS) {
-        g_key = key;
         switch (key) {
             case GLFW_KEY_F1:
                 Application::LoadCam("../data/cam1.txt");

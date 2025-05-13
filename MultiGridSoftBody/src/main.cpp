@@ -180,6 +180,8 @@ void initRenderSyn() {
         auto sphere = g_simulator->m_sphereColliders[i];
         sphere->m_renderObjId = g_render->CreatePBRObj("sphere_" + to_string(i), 0, 1, 0, 1, 1);
     }
+
+    g_simulator->m_triMoveObjId = g_render->CreatePBRObj("moveTri", 0.6, 0.5, 0.4, 0.2, 0.3);
 }
 
 void renderOnce() {
@@ -228,6 +230,44 @@ void renderOnce() {
         g_posColorForRender[i * 6 + 5] = color.z; 
     }
     g_render->UpdatePartical(vertNum, g_posColorForRender.data());
+
+    // 更新碰撞三角形排出位置
+    vector<unsigned int> triIdx;
+    vector<float> vert9float;
+    for (int triId = 0; triId < g_simulator->m_triIsCollide.size(); triId++) {
+        int triIsCollide = g_simulator->m_triIsCollide[triId];
+        if (triIsCollide) {
+            unsigned int idA = g_simulator->m_tetFaceIdx[triId * 3 + 0];
+            unsigned int idB = g_simulator->m_tetFaceIdx[triId * 3 + 1];
+            unsigned int idC = g_simulator->m_tetFaceIdx[triId * 3 + 2];
+            Point3D moveVec = {g_simulator->m_triMoveVec[triId * 3 + 0], g_simulator->m_triMoveVec[triId * 3 + 1], g_simulator->m_triMoveVec[triId * 3 + 2]};
+            Point3D A = {g_simulator->m_tetVertPos[idA * 3 + 0], g_simulator->m_tetVertPos[idA * 3 + 1], g_simulator->m_tetVertPos[idA * 3 + 2]};
+            Point3D B = {g_simulator->m_tetVertPos[idB * 3 + 0], g_simulator->m_tetVertPos[idB * 3 + 1], g_simulator->m_tetVertPos[idB * 3 + 2]};
+            Point3D C = {g_simulator->m_tetVertPos[idC * 3 + 0], g_simulator->m_tetVertPos[idC * 3 + 1], g_simulator->m_tetVertPos[idC * 3 + 2]};
+            Point3D AMove = A + moveVec;
+            Point3D BMove = B + moveVec;
+            Point3D CMove = C + moveVec;
+            vector<Point3D> verts = {AMove, BMove, CMove};
+            unsigned int vId0 = vert9float.size() / 9;
+            for (auto v : verts) {
+                vert9float.push_back(v.x);
+                vert9float.push_back(v.y);
+                vert9float.push_back(v.z);
+                vert9float.push_back(1);
+                vert9float.push_back(0);
+                vert9float.push_back(0);
+                vert9float.push_back(0);
+                vert9float.push_back(0);
+                vert9float.push_back(0);
+            }
+            triIdx.push_back(vId0);
+            triIdx.push_back(vId0 + 1);
+            triIdx.push_back(vId0 + 2);
+        }
+    }
+
+    g_render->UpdateMesh(g_simulator->m_triMoveObjId, triIdx.size(), triIdx.size() * sizeof(unsigned int), triIdx.data(), vert9float.size() * sizeof(float),
+                         vert9float.data());
 
     // 渲染
     int ret = g_render->Render();

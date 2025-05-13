@@ -27,15 +27,11 @@ void Mesh::updateTransform(float* t) {
 }
 
 void Mesh::updateMesh(int eleNum, int triNum, unsigned int* triIdx, int vertNum, float* verts) {
-	if (triNum > 0) {
 		m_buffer.numElements = eleNum;
 		m_buffer.triNum = triNum;
 		glNamedBufferData(m_buffer.ibo,  triNum, reinterpret_cast<const void*>(triIdx), GL_DYNAMIC_DRAW);
-	}
-	if (vertNum > 0) {
 		m_buffer.vertNum = vertNum;
 		glNamedBufferData(m_buffer.vbo, vertNum, reinterpret_cast<const void*>(verts), GL_DYNAMIC_DRAW);
-	}
 }
 
 void Mesh::updateMeshConst( int triNum, unsigned int* triIdx, int vertNum, float* vert) {

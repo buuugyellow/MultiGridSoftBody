@@ -55,6 +55,8 @@ void Simulator::Init() {
     m_tetVertEpSum.resize(m_tetVertPos.size() / 3);
     m_tetVertVSum.resize(m_tetVertPos.size() / 3);
     m_tetVertIsCollide.resize(m_tetVertPos.size() / 3);
+    m_triIsCollide.resize(m_tetFaceIdx.size() / 3);
+    m_triMoveVec.resize(m_tetFaceIdx.size());
 
     // Ω‚À„∆˜≥ı ºªØ
     switch (g_solverType) {

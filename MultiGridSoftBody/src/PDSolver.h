@@ -27,7 +27,9 @@ struct PDSolverData {
     float* tetVertVelocityBak_d;      // 速度的备份，用于收敛 step 中的计算
     float* tetVertExternForce_d;      // 外力，tetVertNum*3
     float* tetVertForce_d;            // 顶点受力, tetVertNum*3
-    int* tetVertIsCollied_d;         // 发生碰撞为 1，否则为 0
+    int* tetVertIsCollided_d;          // 发生碰撞大于 0，否则为 0
+    int* triIsCollided_d;             // 三角形是否发生碰撞
+    float* triColProjectVector_d;     // 三角形碰撞排出的向量
     float* tetVertCollisionDiag_d;    // 碰撞能量的 Hessian 阵的对角阵（向量存储）
     float* tetVertCollisionForce_d;   // 碰撞能量的一阶导向量
 
