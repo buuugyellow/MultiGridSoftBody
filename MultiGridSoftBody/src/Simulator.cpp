@@ -11,6 +11,7 @@
 using namespace std;
 
 int g_stepCnt = 0;
+double g_frameDuration;
 
 Simulator& Simulator::GetInstance() {
     static Simulator instance;
@@ -106,6 +107,10 @@ void Simulator::UpdateCollider() {
 }
 
 void Simulator::Update() {
+    static auto last_time = std::chrono::high_resolution_clock::now();
+    auto cur_time = std::chrono::high_resolution_clock::now();
+    g_frameDuration = (std::chrono::duration_cast<std::chrono::microseconds>(cur_time - last_time)).count();
+    last_time = cur_time;
     //if (g_stepCnt > 240) {
     //    if (timeOutputFile) {
     //        fclose(timeOutputFile);

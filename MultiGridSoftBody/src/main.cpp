@@ -204,70 +204,67 @@ void renderOnce() {
                              sphere->m_vertNum * 9 * sizeof(float), sphere->m_vert9float.data());
     }
 
-    // 更新可视化的软体顶点
-    for (int i = 0; i < vertNum; i++) {
-        g_posColorForRender[i * 6 + 0] = g_simulator->m_tetVertPos[i * 3 + 0];
-        g_posColorForRender[i * 6 + 1] = g_simulator->m_tetVertPos[i * 3 + 1];
-        g_posColorForRender[i * 6 + 2] = g_simulator->m_tetVertPos[i * 3 + 2];
-
-        Point3D color;
-        if (g_UIEnergeOrCllisioin) {
-            // maxEpDensity = 102.653015, minEpDensity = -172.211227 120_12_12
-            // maxEpDensity = 75.676262, minEpDensity = -98.100319 60_6_6
-            // maxEpDensity = 74.737572, minEpDensity = -93.356651 40_4_4 为什么不一样？
-            float EpDensity = g_simulator->m_tetVertEpDensity[i];
-            float EpMapValue;
-            EpMapValue = (EpDensity > 0) ? (1 - pow(2, -EpDensity) / 2) : (pow(2, EpDensity) / 2);
-            Point3D colorBegin = {0, 1, 0};
-            Point3D colorEnd = {1, 0, 0};
-            color = colorBegin + (colorEnd - colorBegin) * EpMapValue;
-        } else {
-            int isCollided = g_simulator->m_tetVertIsCollide[i];
-            color = (isCollided > 0) ? Point3D(1, 0, 0) : Point3D(0, 1, 0);
-        }
-        g_posColorForRender[i * 6 + 3] = color.x;
-        g_posColorForRender[i * 6 + 4] = color.y;
-        g_posColorForRender[i * 6 + 5] = color.z; 
-    }
-    g_render->UpdatePartical(vertNum, g_posColorForRender.data());
-
-    // 更新碰撞三角形排出位置
-    vector<unsigned int> triIdx;
-    vector<float> vert9float;
-    for (int triId = 0; triId < g_simulator->m_triIsCollide.size(); triId++) {
-        int triIsCollide = g_simulator->m_triIsCollide[triId];
-        if (triIsCollide) {
-            unsigned int idA = g_simulator->m_tetFaceIdx[triId * 3 + 0];
-            unsigned int idB = g_simulator->m_tetFaceIdx[triId * 3 + 1];
-            unsigned int idC = g_simulator->m_tetFaceIdx[triId * 3 + 2];
-            Point3D moveVec = {g_simulator->m_triMoveVec[triId * 3 + 0], g_simulator->m_triMoveVec[triId * 3 + 1], g_simulator->m_triMoveVec[triId * 3 + 2]};
-            Point3D A = {g_simulator->m_tetVertPos[idA * 3 + 0], g_simulator->m_tetVertPos[idA * 3 + 1], g_simulator->m_tetVertPos[idA * 3 + 2]};
-            Point3D B = {g_simulator->m_tetVertPos[idB * 3 + 0], g_simulator->m_tetVertPos[idB * 3 + 1], g_simulator->m_tetVertPos[idB * 3 + 2]};
-            Point3D C = {g_simulator->m_tetVertPos[idC * 3 + 0], g_simulator->m_tetVertPos[idC * 3 + 1], g_simulator->m_tetVertPos[idC * 3 + 2]};
-            Point3D AMove = A + moveVec;
-            Point3D BMove = B + moveVec;
-            Point3D CMove = C + moveVec;
-            vector<Point3D> verts = {AMove, BMove, CMove};
-            unsigned int vId0 = vert9float.size() / 9;
-            for (auto v : verts) {
-                vert9float.push_back(v.x);
-                vert9float.push_back(v.y);
-                vert9float.push_back(v.z);
-                vert9float.push_back(1);
-                vert9float.push_back(0);
-                vert9float.push_back(0);
-                vert9float.push_back(0);
-                vert9float.push_back(0);
-                vert9float.push_back(0);
-            }
-            triIdx.push_back(vId0);
-            triIdx.push_back(vId0 + 1);
-            triIdx.push_back(vId0 + 2);
-        }
-    }
-
-    g_render->UpdateMesh(g_simulator->m_triMoveObjId, triIdx.size(), triIdx.size() * sizeof(unsigned int), triIdx.data(), vert9float.size() * sizeof(float),
-                         vert9float.data());
+    //// 更新可视化的软体顶点
+    //for (int i = 0; i < vertNum; i++) {
+    //    g_posColorForRender[i * 6 + 0] = g_simulator->m_tetVertPos[i * 3 + 0];
+    //    g_posColorForRender[i * 6 + 1] = g_simulator->m_tetVertPos[i * 3 + 1];
+    //    g_posColorForRender[i * 6 + 2] = g_simulator->m_tetVertPos[i * 3 + 2];
+    //    Point3D color;
+    //    if (g_UIEnergeOrCllisioin) {
+    //        // maxEpDensity = 102.653015, minEpDensity = -172.211227 120_12_12
+    //        // maxEpDensity = 75.676262, minEpDensity = -98.100319 60_6_6
+    //        // maxEpDensity = 74.737572, minEpDensity = -93.356651 40_4_4 为什么不一样？
+    //        float EpDensity = g_simulator->m_tetVertEpDensity[i];
+    //        float EpMapValue;
+    //        EpMapValue = (EpDensity > 0) ? (1 - pow(2, -EpDensity) / 2) : (pow(2, EpDensity) / 2);
+    //        Point3D colorBegin = {0, 1, 0};
+    //        Point3D colorEnd = {1, 0, 0};
+    //        color = colorBegin + (colorEnd - colorBegin) * EpMapValue;
+    //    } else {
+    //        int isCollided = g_simulator->m_tetVertIsCollide[i];
+    //        color = (isCollided > 0) ? Point3D(1, 0, 0) : Point3D(0, 1, 0);
+    //    }
+    //    g_posColorForRender[i * 6 + 3] = color.x;
+    //    g_posColorForRender[i * 6 + 4] = color.y;
+    //    g_posColorForRender[i * 6 + 5] = color.z; 
+    //}
+    //g_render->UpdatePartical(vertNum, g_posColorForRender.data());
+    //// 更新碰撞三角形排出位置
+    //vector<unsigned int> triIdx;
+    //vector<float> vert9float;
+    //for (int triId = 0; triId < g_simulator->m_triIsCollide.size(); triId++) {
+    //    int triIsCollide = g_simulator->m_triIsCollide[triId];
+    //    if (triIsCollide) {
+    //        unsigned int idA = g_simulator->m_tetFaceIdx[triId * 3 + 0];
+    //        unsigned int idB = g_simulator->m_tetFaceIdx[triId * 3 + 1];
+    //        unsigned int idC = g_simulator->m_tetFaceIdx[triId * 3 + 2];
+    //        Point3D moveVec = {g_simulator->m_triMoveVec[triId * 3 + 0], g_simulator->m_triMoveVec[triId * 3 + 1], g_simulator->m_triMoveVec[triId * 3 + 2]};
+    //        Point3D A = {g_simulator->m_tetVertPos[idA * 3 + 0], g_simulator->m_tetVertPos[idA * 3 + 1], g_simulator->m_tetVertPos[idA * 3 + 2]};
+    //        Point3D B = {g_simulator->m_tetVertPos[idB * 3 + 0], g_simulator->m_tetVertPos[idB * 3 + 1], g_simulator->m_tetVertPos[idB * 3 + 2]};
+    //        Point3D C = {g_simulator->m_tetVertPos[idC * 3 + 0], g_simulator->m_tetVertPos[idC * 3 + 1], g_simulator->m_tetVertPos[idC * 3 + 2]};
+    //        Point3D AMove = A + moveVec;
+    //        Point3D BMove = B + moveVec;
+    //        Point3D CMove = C + moveVec;
+    //        vector<Point3D> verts = {AMove, BMove, CMove};
+    //        unsigned int vId0 = vert9float.size() / 9;
+    //        for (auto v : verts) {
+    //            vert9float.push_back(v.x);
+    //            vert9float.push_back(v.y);
+    //            vert9float.push_back(v.z);
+    //            vert9float.push_back(1);
+    //            vert9float.push_back(0);
+    //            vert9float.push_back(0);
+    //            vert9float.push_back(0);
+    //            vert9float.push_back(0);
+    //            vert9float.push_back(0);
+    //        }
+    //        triIdx.push_back(vId0);
+    //        triIdx.push_back(vId0 + 1);
+    //        triIdx.push_back(vId0 + 2);
+    //    }
+    //}
+    //g_render->UpdateMesh(g_simulator->m_triMoveObjId, triIdx.size(), triIdx.size() * sizeof(unsigned int), triIdx.data(), vert9float.size() * sizeof(float),
+    //                     vert9float.data());
 
     // 渲染
     int ret = g_render->Render();
@@ -277,7 +274,7 @@ void renderOnce() {
 void init() {
     config_dataDir = "../data/";
     config_tempDir = "../temp/";
-    config_objName = "Y_1_10_1";  // 单一物体
+    config_objName = "Y_12_120_12";  // 单一物体
     config_objName_coarse = "cube40_4_4";
     g_synOrAsy = true;
     g_solverType = PD;

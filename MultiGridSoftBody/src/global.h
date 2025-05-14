@@ -36,6 +36,7 @@ extern bool g_UIShowParticle;
 extern bool g_UIEnergeOrCllisioin;
 extern float g_UIParticleR;
 extern int g_key;
+extern double g_frameDuration;
 
 void doUI();
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);

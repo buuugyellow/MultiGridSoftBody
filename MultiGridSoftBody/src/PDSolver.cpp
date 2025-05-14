@@ -150,7 +150,7 @@ void PDSolver::Init(const vector<float> tetVertPos, const vector<int>& tetIdx, c
     m_collisionStiffness = 1000.0f;
     m_rho = 0.9992f;
     m_gravityX = 0.0f;
-    m_gravityY = 0.0f;
+    m_gravityY = -9.8f;
     m_gravityZ = 0.0f;
 
     m_tetIndex = tetIdx;
@@ -227,8 +227,8 @@ void PDSolver::Step() {
     float omega = 1.0f;
     for (int i = 0; i < m_iterNum; i++) {
         pdSolverData->runClearTemp();
-        //DCDByPoint();
-        DCDByTriangle();
+        DCDByPoint();
+        //DCDByTriangle();
         pdSolverData->runCalculateIF(m_volumnStiffness);
         omega = 4 / (4 - m_rho * m_rho * omega);
         pdSolverData->runcalculatePOS(omega, m_dt);
