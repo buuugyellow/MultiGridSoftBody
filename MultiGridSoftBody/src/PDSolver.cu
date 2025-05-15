@@ -362,12 +362,10 @@ __global__ void AvgOutsideTetVertNormal(int tetVertNum, float* tetVertNormal) {
 
     Point3D dir = {tetVertNormal[threadid * 3 + 0], tetVertNormal[threadid * 3 + 1], tetVertNormal[threadid * 3 + 2]};
     float len = length(dir);
-    if (len > 1.0f - 1e-5f) {
+    if (len > FLT_EPSILON) {
         tetVertNormal[threadid * 3 + 0] /= len;
         tetVertNormal[threadid * 3 + 1] /= len;
         tetVertNormal[threadid * 3 + 2] /= len;
-    } else if (len > 1e-5f) {
-        printf("[ERROR]顶点法向量的模长应为 0 或者大于等于 1\n");
     }
 }
 
