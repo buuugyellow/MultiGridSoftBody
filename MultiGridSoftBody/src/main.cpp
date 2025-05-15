@@ -206,7 +206,11 @@ void renderOnce() {
 
     // 更新可视化的软体顶点
     if (g_UIShowParticle) {
+        g_collidedVertCnt = 0;
         for (int i = 0; i < vertNum; i++) {
+            int isCollided = g_simulator->m_tetVertIsCollide[i];
+            if (isCollided > 0) g_collidedVertCnt++;
+
             g_posColorForRender[i * 6 + 0] = g_simulator->m_tetVertPos[i * 3 + 0];
             g_posColorForRender[i * 6 + 1] = g_simulator->m_tetVertPos[i * 3 + 1];
             g_posColorForRender[i * 6 + 2] = g_simulator->m_tetVertPos[i * 3 + 2];
@@ -222,7 +226,6 @@ void renderOnce() {
                 Point3D colorEnd = {1, 0, 0};
                 color = colorBegin + (colorEnd - colorBegin) * EpMapValue;
             } else {
-                int isCollided = g_simulator->m_tetVertIsCollide[i];
                 color = (isCollided > 0) ? Point3D(1, 0, 0) : Point3D(0, 1, 0);
             }
             g_posColorForRender[i * 6 + 3] = color.x;

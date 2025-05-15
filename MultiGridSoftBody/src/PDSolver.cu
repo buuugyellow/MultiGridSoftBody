@@ -17,10 +17,12 @@
 #endif  // PRINT_CUDA_ERROR
 
 void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
-                        float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h, int outsideTriNum_h, unsigned int* outsideTriIndex_h) {
+                        float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h, int outsideTriNum_h, unsigned int* outsideTriIndex_h,
+                        int outsideTetVertNum_h, unsigned int* outsideTetVertIds_h) {
     tetNum = tetNum_h;
     tetVertNum = tetVertNum_h;
     outsideTriNum = outsideTriNum_h;
+    outsideTetVertNum = outsideTetVertNum_h;
     cudaMalloc((void**)&tetVertPos_d, tetVertNum * 3 * sizeof(float));
     cudaMemcpy(tetVertPos_d, tetVertPos_h, tetVertNum * 3 * sizeof(float), cudaMemcpyHostToDevice);
     cudaMalloc((void**)&tetIndex_d, tetNum * 4 * sizeof(int));
@@ -28,6 +30,8 @@ void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* 
     cudaMalloc((void**)&outsideTriIndex_d, outsideTriNum * 3 * sizeof(unsigned int));
     cudaMemcpy(outsideTriIndex_d, outsideTriIndex_h, outsideTriNum * 3 * sizeof(unsigned int), cudaMemcpyHostToDevice);
     cudaMalloc((void**)&outsideTriNormal_d, outsideTriNum * 3 * sizeof(float));
+    cudaMalloc((void**)&outsideTetVertIds_d, outsideTetVertNum * sizeof(unsigned int));
+    cudaMemcpy(outsideTetVertIds_d, outsideTetVertIds_h, outsideTetVertNum * sizeof(unsigned int), cudaMemcpyHostToDevice);
     cudaMalloc((void**)&tetVertNormal_d, tetVertNum * 3 * sizeof(float));
     cudaMalloc((void**)&tetInvD3x3_d, tetNum * 9 * sizeof(float));
     cudaMemcpy(tetInvD3x3_d, tetInvD3x3_h, tetNum * 9 * sizeof(float), cudaMemcpyHostToDevice);
@@ -306,11 +310,55 @@ __global__ void DCDByPoint_sphere(Point3D center, float radius, float collisionS
     }
 }
 
+__global__ void DCDByPoint_sphere(Point3D center, float radius, float collisionStiffness, int vertexNum, float* positions, float* directDir, int* isCollied,
+    float* collisionDiag, float* collisionForce, unsigned int* tetVertIds) {
+    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (threadid >= vertexNum) return;
+
+    unsigned int tetVertId = tetVertIds[threadid];
+    int xId = tetVertId * 3 + 0;
+    int yId = tetVertId * 3 + 1;
+    int zId = tetVertId * 3 + 2;
+    Point3D p = {positions[xId], positions[yId], positions[zId]};
+    Point3D cp = p - center;
+
+    Point3D dir = cp / length(cp);
+    if (directDir != nullptr) dir = {directDir[xId], directDir[yId], directDir[zId]};
+
+    float distance = length(cp);
+    if (distance < radius) {
+        // (cp + t * dir)^2 = r^2
+        float a = 1;
+        float b = 2 * dotProduct(cp, dir);
+        float c = dotProduct(cp, cp) - radius * radius;
+        float t = (-b + sqrt(b * b - 4 * a * c)) / (2 * a);
+        Point3D colP = p + dir * t;
+        Point3D centerColP = colP - center;
+        Point3D colN = centerColP / length(centerColP);
+        float colNDotDir = dotProduct(colN, dir);
+
+        isCollied[tetVertId] = 1;
+        collisionDiag[xId] += collisionStiffness * colN.x * colN.x;
+        collisionDiag[yId] += collisionStiffness * colN.y * colN.y;
+        collisionDiag[zId] += collisionStiffness * colN.z * colN.z;
+        collisionForce[xId] += collisionStiffness * t * colNDotDir * colN.x;
+        collisionForce[yId] += collisionStiffness * t * colNDotDir * colN.y;
+        collisionForce[zId] += collisionStiffness * t * colNDotDir * colN.z;
+    }
+}
+
 void PDSolverData::runDCDByPoint_sphere(Point3D center, float radius, float collisionStiffness) {
+    // 所有顶点都进行碰撞检测以及响应
     int threadNum = 512;
     int blockNum = (tetVertNum + threadNum - 1) / threadNum;
     DCDByPoint_sphere<<<blockNum, threadNum>>>(center, radius, collisionStiffness, tetVertNum, tetVertPos_d, nullptr, tetVertIsCollided_d,
                                                tetVertCollisionDiag_d, tetVertCollisionForce_d);
+    // 仅表面顶点进行碰撞检测以及响应
+    //int threadNum = 512;
+    //int blockNum = (outsideTetVertNum + threadNum - 1) / threadNum;
+    //DCDByPoint_sphere<<<blockNum, threadNum>>>(center, radius, collisionStiffness, tetVertNum, tetVertPos_d, nullptr, tetVertIsCollided_d,
+    //                                           tetVertCollisionDiag_d, tetVertCollisionForce_d, outsideTetVertIds_d);
+
     PRINT_CUDA_ERROR_AFTER("runDCDByPoint_sphere");
 }
 

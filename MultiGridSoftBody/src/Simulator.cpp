@@ -14,6 +14,7 @@ using namespace std;
 int g_stepCnt = 0;
 double g_realDuration;
 double g_totalDuration;
+int g_collidedVertCnt;
 
 Simulator& Simulator::GetInstance() {
     static Simulator instance;
@@ -78,7 +79,7 @@ void Simulator::Init() {
 
 void Simulator::UpdateCollider() {
     for (auto sphere : m_sphereColliders) {
-        sphere->Update(Point3D(0.02f, 0, 0));
+        sphere->Update(Point3D(0.1f, 0, 0));
     }
     return;
 
@@ -115,20 +116,21 @@ void Simulator::Update() {
     g_totalDuration = (chrono::duration_cast<chrono::microseconds>(begin_time - last_time)).count();
     last_time = begin_time;
 
-    //if (g_stepCnt > 240) {
-    //    if (timeOutputFile) {
-    //        fclose(timeOutputFile);
-    //        timeOutputFile = nullptr;
-    //    }
-    //    if (energyOutputFile) {
-    //        fclose(energyOutputFile);
-    //        energyOutputFile = nullptr;
-    //    }
-    //    renderOnce();
-    //    return;
-    //}
-    //g_stepCnt++;
-    //cout << "step frame " << g_stepCnt << endl;
+    if (g_stepCnt > 80) {
+        if (timeOutputFile) {
+            fclose(timeOutputFile);
+            timeOutputFile = nullptr;
+        }
+        if (energyOutputFile) {
+            fclose(energyOutputFile);
+            energyOutputFile = nullptr;
+        }
+        renderOnce();
+        return;
+    }
+    g_stepCnt++;
+    cout << "step frame " << g_stepCnt << endl;
+
     UpdateCollider();
     switch (g_solverType) {
         case PD:

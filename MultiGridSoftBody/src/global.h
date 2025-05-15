@@ -38,6 +38,7 @@ extern float g_UIParticleR;
 extern int g_key;
 extern double g_realDuration;
 extern double g_totalDuration;
+extern int g_collidedVertCnt;
 
 void doUI();
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);

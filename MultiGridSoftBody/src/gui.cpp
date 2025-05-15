@@ -56,6 +56,7 @@ void doUI() {
     if (g_UIShowParticle) {
         ImGui::SliderFloat(u8"Particle Radius", &g_UIParticleR, 0.05, 0.10);
         ImGui::Checkbox("EnergyOrCollision", &g_UIEnergeOrCllisioin);
+        ImGui::Text("CollidedVertCnt: %d", g_collidedVertCnt);
     }
 
     ImGui::PopStyleColor();
