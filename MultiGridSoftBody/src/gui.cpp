@@ -45,7 +45,8 @@ void doUI() {
     ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.0f, 1.0f));
     
-    ImGui::Text("duration_frame: %.2fms", g_frameDuration / 1000);
+    ImGui::Text("duration_total: %.2fms", g_totalDuration / 1000);
+    ImGui::Text("duration_real: %.2fms", g_realDuration / 1000);
     ImGui::Text("duration_phy: %.2fms", duration_physical / 1000);
 
     ImGui::Checkbox("Mesh", &g_UIShowMesh);
@@ -55,6 +56,7 @@ void doUI() {
     if (g_UIShowParticle) {
         ImGui::SliderFloat(u8"Particle Radius", &g_UIParticleR, 0.05, 0.10);
         ImGui::Checkbox("EnergyOrCollision", &g_UIEnergeOrCllisioin);
+        ImGui::Text("CollidedVertCnt: %d", g_collidedVertCnt);
     }
 
     ImGui::PopStyleColor();

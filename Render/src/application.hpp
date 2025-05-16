@@ -22,12 +22,6 @@
 class OS_API Application
 {
 public:
-
-	//bool m_step = true;
-	//bool m_running = true;
-	//bool m_burn = false;
- //   int m_key = 0;
- //   bool m_keyCB = true;
 	Application();
 	~Application();
 
@@ -92,8 +86,6 @@ private:
 	static void mousePositionCallback(GLFWwindow* window, double xpos, double ypos);
 	static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 	static void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-	//static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-
 
 	GLFWwindow* m_window;
 	double m_prevCursorX;

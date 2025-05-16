@@ -7,11 +7,14 @@
 #include <iostream>
 #include <set>
 #include <string>
+#include <thread>
 
 using namespace std;
 
 int g_stepCnt = 0;
-double g_frameDuration;
+double g_realDuration;
+double g_totalDuration;
+int g_collidedVertCnt;
 
 Simulator& Simulator::GetInstance() {
     static Simulator instance;
@@ -75,9 +78,10 @@ void Simulator::Init() {
 }
 
 void Simulator::UpdateCollider() {
-    //for (auto sphere : m_sphereColliders) {
-    //    sphere->Update(Point3D(0.05f, 0, 0));
-    //}
+    for (auto sphere : m_sphereColliders) {
+        sphere->Update(Point3D(0.1f, 0, 0));
+    }
+    return;
 
     float delta = 0.05f;
     if (!m_sphereColliders.empty()) {
@@ -107,24 +111,26 @@ void Simulator::UpdateCollider() {
 }
 
 void Simulator::Update() {
-    static auto last_time = std::chrono::high_resolution_clock::now();
-    auto cur_time = std::chrono::high_resolution_clock::now();
-    g_frameDuration = (std::chrono::duration_cast<std::chrono::microseconds>(cur_time - last_time)).count();
-    last_time = cur_time;
-    //if (g_stepCnt > 240) {
-    //    if (timeOutputFile) {
-    //        fclose(timeOutputFile);
-    //        timeOutputFile = nullptr;
-    //    }
-    //    if (energyOutputFile) {
-    //        fclose(energyOutputFile);
-    //        energyOutputFile = nullptr;
-    //    }
-    //    renderOnce();
-    //    return;
-    //}
-    //g_stepCnt++;
-    //cout << "step frame " << g_stepCnt << endl;
+    static auto last_time = chrono::high_resolution_clock::now();
+    auto begin_time = chrono::high_resolution_clock::now();
+    g_totalDuration = (chrono::duration_cast<chrono::microseconds>(begin_time - last_time)).count();
+    last_time = begin_time;
+
+    if (g_stepCnt > 80) {
+        if (timeOutputFile) {
+            fclose(timeOutputFile);
+            timeOutputFile = nullptr;
+        }
+        if (energyOutputFile) {
+            fclose(energyOutputFile);
+            energyOutputFile = nullptr;
+        }
+        renderOnce();
+        return;
+    }
+    g_stepCnt++;
+    cout << "step frame " << g_stepCnt << endl;
+
     UpdateCollider();
     switch (g_solverType) {
         case PD:
@@ -134,4 +140,9 @@ void Simulator::Update() {
             m_solver_mg->Step();
             break;
     }
+
+    auto end_time = chrono::high_resolution_clock::now();
+    g_realDuration = (chrono::duration_cast<chrono::microseconds>(end_time - begin_time)).count();
+    auto target_time = begin_time + chrono::microseconds(33333);
+    while (chrono::high_resolution_clock::now() < target_time) {}
 }

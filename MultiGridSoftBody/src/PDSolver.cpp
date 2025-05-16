@@ -156,6 +156,9 @@ void PDSolver::Init(const vector<float> tetVertPos, const vector<int>& tetIdx, c
     m_tetIndex = tetIdx;
     m_outsideTriIndex = tetFaceIdx;
     m_outsideTriNum = m_outsideTriIndex.size() / 3;
+    set<unsigned int> outsideTetVertIdSet = set<unsigned int>(m_outsideTriIndex.begin(), m_outsideTriIndex.end());
+    m_outsideTetVertIds.assign(outsideTetVertIdSet.begin(), outsideTetVertIdSet.end());
+    m_outsideTetVertNum = m_outsideTetVertIds.size();
     m_tetVertPos = tetVertPos;
     m_tetNum = m_tetIndex.size() / 4;
     m_tetVertNum = m_tetVertPos.size() / 3;
@@ -166,7 +169,7 @@ void PDSolver::Init(const vector<float> tetVertPos, const vector<int>& tetIdx, c
     SetFixedVert();
     pdSolverData = new PDSolverData();
     pdSolverData->Init(m_tetNum, m_tetVertNum, m_tetIndex.data(), m_tetInvD3x3.data(), m_tetInvD3x4.data(), m_tetVolume.data(), m_tetVolumeDiag.data(),
-                       m_tetVertMass.data(), m_tetVertFixed.data(), m_tetVertPos.data(), m_outsideTriNum, m_outsideTriIndex.data());
+                       m_tetVertMass.data(), m_tetVertFixed.data(), m_tetVertPos.data(), m_outsideTriNum, m_outsideTriIndex.data(), m_outsideTetVertNum, m_outsideTetVertIds.data());
     LOG(INFO) << "pdSolverData Init ½áÊø";
 }
 
