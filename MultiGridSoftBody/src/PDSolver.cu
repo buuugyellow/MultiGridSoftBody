@@ -18,7 +18,7 @@
 
 void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
                         float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h, int outsideTriNum_h, unsigned int* outsideTriIndex_h,
-                        int outsideTetVertNum_h, unsigned int* outsideTetVertIds_h) {
+                        int outsideTetVertNum_h, unsigned int* outsideTetVertIds_h, unsigned int* outsideTriOppositeVertIds_h) {
     tetNum = tetNum_h;
     tetVertNum = tetVertNum_h;
     outsideTriNum = outsideTriNum_h;
@@ -29,6 +29,8 @@ void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* 
     cudaMemcpy(tetIndex_d, tetIndex_h, tetNum * 4 * sizeof(int), cudaMemcpyHostToDevice);
     cudaMalloc((void**)&outsideTriIndex_d, outsideTriNum * 3 * sizeof(unsigned int));
     cudaMemcpy(outsideTriIndex_d, outsideTriIndex_h, outsideTriNum * 3 * sizeof(unsigned int), cudaMemcpyHostToDevice);
+    cudaMalloc((void**)&outsideTriOppositeVertIds_d, outsideTriNum * sizeof(unsigned int));
+    cudaMemcpy(outsideTriOppositeVertIds_d, outsideTriOppositeVertIds_h, outsideTriNum * sizeof(unsigned int), cudaMemcpyHostToDevice);
     cudaMalloc((void**)&outsideTriNormal_d, outsideTriNum * 3 * sizeof(float));
     cudaMalloc((void**)&outsideTetVertIds_d, outsideTetVertNum * sizeof(unsigned int));
     cudaMemcpy(outsideTetVertIds_d, outsideTetVertIds_h, outsideTetVertNum * sizeof(unsigned int), cudaMemcpyHostToDevice);
@@ -301,17 +303,27 @@ __global__ void DCDByPoint_sphere(Point3D center, float radius, float collisionS
         float colNDotDir = dotProduct(colN, dir);
 
         isCollied[threadid] = 1;
-        collisionDiag[xId] += collisionStiffness * colN.x * colN.x;
-        collisionDiag[yId] += collisionStiffness * colN.y * colN.y;
-        collisionDiag[zId] += collisionStiffness * colN.z * colN.z;
-        collisionForce[xId] += collisionStiffness * t * colNDotDir * colN.x;
-        collisionForce[yId] += collisionStiffness * t * colNDotDir * colN.y;
-        collisionForce[zId] += collisionStiffness * t * colNDotDir * colN.z;
+
+        // 约束能量是 k * ((p - colP).dot(colN))^2
+        //collisionDiag[xId] += collisionStiffness * colN.x * colN.x;
+        //collisionDiag[yId] += collisionStiffness * colN.y * colN.y;
+        //collisionDiag[zId] += collisionStiffness * colN.z * colN.z;
+        //collisionForce[xId] += collisionStiffness * t * colNDotDir * colN.x;
+        //collisionForce[yId] += collisionStiffness * t * colNDotDir * colN.y;
+        //collisionForce[zId] += collisionStiffness * t * colNDotDir * colN.z;
+
+        // 约束能量是 k * (p - colP)^2
+        collisionDiag[xId] += collisionStiffness;
+        collisionDiag[yId] += collisionStiffness;
+        collisionDiag[zId] += collisionStiffness;
+        collisionForce[xId] += collisionStiffness * t * dir.x;
+        collisionForce[yId] += collisionStiffness * t * dir.y;
+        collisionForce[zId] += collisionStiffness * t * dir.z;
     }
 }
 
-__global__ void DCDByPoint_sphere(Point3D center, float radius, float collisionStiffness, int vertexNum, float* positions, float* directDir, int* isCollied,
-    float* collisionDiag, float* collisionForce, unsigned int* tetVertIds) {
+__global__ void DCDByOutsidePoint_sphere(Point3D center, float radius, float collisionStiffness, int vertexNum, float* positions, float* directDir,
+                                         int* isCollied, float* collisionDiag, float* collisionForce, unsigned int* tetVertIds) {
     unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
     if (threadid >= vertexNum) return;
 
@@ -356,8 +368,8 @@ void PDSolverData::runDCDByPoint_sphere(Point3D center, float radius, float coll
     // 仅表面顶点进行碰撞检测以及响应
     //int threadNum = 512;
     //int blockNum = (outsideTetVertNum + threadNum - 1) / threadNum;
-    //DCDByPoint_sphere<<<blockNum, threadNum>>>(center, radius, collisionStiffness, tetVertNum, tetVertPos_d, nullptr, tetVertIsCollided_d,
-    //                                           tetVertCollisionDiag_d, tetVertCollisionForce_d, outsideTetVertIds_d);
+    //DCDByOutsidePoint_sphere<<<blockNum, threadNum>>>(center, radius, collisionStiffness, tetVertNum, tetVertPos_d, nullptr, tetVertIsCollided_d,
+    //                                                  tetVertCollisionDiag_d, tetVertCollisionForce_d, outsideTetVertIds_d);
 
     PRINT_CUDA_ERROR_AFTER("runDCDByPoint_sphere");
 }
@@ -432,7 +444,7 @@ void PDSolverData::runUpdateOutsideTetVertNormal() {
 
 __device__ void DCDByTriangle_sphere_response(unsigned int threadid, float* positions, unsigned int* outsideTriIndex, const Point3D& center, float radius,
                                               const Point3D& hit, float collisionStiffness, int* isCollied, float* collisionDiag, float* collisionForce,
-                                              int* triIsCollided, float* triColProjectVector) {
+                                              int* triIsCollided, float* triColProjectVector, unsigned int* outsideTriOppositeVertIds) {
     triIsCollided[threadid] = 1;
     Point3D moveVec = center - hit;
     triColProjectVector[threadid * 3 + 0] = moveVec.x;
@@ -441,6 +453,7 @@ __device__ void DCDByTriangle_sphere_response(unsigned int threadid, float* posi
     unsigned int idA = outsideTriIndex[threadid * 3 + 0];
     unsigned int idB = outsideTriIndex[threadid * 3 + 1];
     unsigned int idC = outsideTriIndex[threadid * 3 + 2];
+    unsigned int idD = outsideTriOppositeVertIds[threadid];
     atomicAdd(isCollied + idA, 1);
     atomicAdd(isCollied + idB, 1);
     atomicAdd(isCollied + idC, 1);
@@ -453,6 +466,9 @@ __device__ void DCDByTriangle_sphere_response(unsigned int threadid, float* posi
     atomicAdd(collisionDiag + idC * 3 + 0, collisionStiffness);
     atomicAdd(collisionDiag + idC * 3 + 1, collisionStiffness);
     atomicAdd(collisionDiag + idC * 3 + 2, collisionStiffness);
+    atomicAdd(collisionDiag + idD * 3 + 0, collisionStiffness);
+    atomicAdd(collisionDiag + idD * 3 + 1, collisionStiffness);
+    atomicAdd(collisionDiag + idD * 3 + 2, collisionStiffness);
     atomicAdd(collisionForce + idA * 3 + 0, collisionStiffness * moveVec.x);
     atomicAdd(collisionForce + idA * 3 + 1, collisionStiffness * moveVec.y);
     atomicAdd(collisionForce + idA * 3 + 2, collisionStiffness * moveVec.z);
@@ -462,11 +478,14 @@ __device__ void DCDByTriangle_sphere_response(unsigned int threadid, float* posi
     atomicAdd(collisionForce + idC * 3 + 0, collisionStiffness * moveVec.x);
     atomicAdd(collisionForce + idC * 3 + 1, collisionStiffness * moveVec.y);
     atomicAdd(collisionForce + idC * 3 + 2, collisionStiffness * moveVec.z);
+    atomicAdd(collisionForce + idD * 3 + 0, collisionStiffness * moveVec.x);
+    atomicAdd(collisionForce + idD * 3 + 1, collisionStiffness * moveVec.y);
+    atomicAdd(collisionForce + idD * 3 + 2, collisionStiffness * moveVec.z);
 }
 
 __global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisionStiffness, int outsideTriNum, float* positions, unsigned int* outsideTriIndex,
                                      float* outsideTriNormal, int* isCollied, float* collisionDiag, float* collisionForce, int* triIsCollided,
-                                     float* triColProjectVector) {
+                                     float* triColProjectVector, unsigned int* outsideTriOppositeVertIds) {
     unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
     if (threadid >= outsideTriNum) return;
 
@@ -509,9 +528,8 @@ __global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisi
     Point3D hit = center + sphereDir * t;  // 筛选有效交点（t>0 且在三角形内）
     bool valid = pointInTriangle(hit, AA, BB, CC);
     if (valid) {
-        // TODO
         DCDByTriangle_sphere_response(threadid, positions, outsideTriIndex, center, radius, hit, collisionStiffness, isCollied, collisionDiag, collisionForce,
-                                      triIsCollided, triColProjectVector);
+                                      triIsCollided, triColProjectVector, outsideTriOppositeVertIds);
         return;
     }
 
@@ -540,9 +558,8 @@ __global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisi
                 Point3D BECrossBH = crossProduct(BE, BH);
                 bool valid = (dotProduct(BECrossBO, BECrossBH) < 0);
                 if (valid) {
-                    // TODO
                     DCDByTriangle_sphere_response(threadid, positions, outsideTriIndex, center, radius, hit, collisionStiffness, isCollied, collisionDiag,
-                                                  collisionForce, triIsCollided, triColProjectVector);
+                                                  collisionForce, triIsCollided, triColProjectVector, outsideTriOppositeVertIds);
                     return;
                 }
             }
@@ -565,9 +582,8 @@ __global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisi
                 Point3D& B = triVerts[(i + 2) % 3];
                 bool valid = !isOnCylinderSegment(hit, V, A) && !isOnCylinderSegment(hit, V, B);
                 if (valid) {
-                    // TODO
                     DCDByTriangle_sphere_response(threadid, positions, outsideTriIndex, center, radius, hit, collisionStiffness, isCollied, collisionDiag,
-                                                  collisionForce, triIsCollided, triColProjectVector);
+                                                  collisionForce, triIsCollided, triColProjectVector, outsideTriOppositeVertIds);
                     return;
                 }
             }
@@ -575,11 +591,83 @@ __global__ void DCDByTriangle_sphere(Point3D center, float radius, float collisi
     }
 }
 
+// 无指导向量，往最近的方向排出
+__global__ void DCDByTriangle_sphere_V2(Point3D center, float radius, float collisionStiffness, int outsideTriNum, float* positions, unsigned int* outsideTriIndex,
+    float* outsideTriNormal, int* isCollied, float* collisionDiag, float* collisionForce, int* triIsCollided, float* triColProjectVector, unsigned int* outsideTriOppositeVertIds) {
+    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (threadid >= outsideTriNum) return;
+
+    unsigned int idA = outsideTriIndex[threadid * 3 + 0];
+    unsigned int idB = outsideTriIndex[threadid * 3 + 1];
+    unsigned int idC = outsideTriIndex[threadid * 3 + 2];
+    Point3D A = {positions[idA * 3 + 0], positions[idA * 3 + 1], positions[idA * 3 + 2]};
+    Point3D B = {positions[idB * 3 + 0], positions[idB * 3 + 1], positions[idB * 3 + 2]};
+    Point3D C = {positions[idC * 3 + 0], positions[idC * 3 + 1], positions[idC * 3 + 2]};
+    Point3D triNormal = {outsideTriNormal[threadid * 3 + 0], outsideTriNormal[threadid * 3 + 1], outsideTriNormal[threadid * 3 + 2]};
+    
+    // ---- Step 1: 计算球是否与三角形平面相交 ----
+    float distance = fabsf(dotProduct(triNormal, center - A));
+    if (distance > radius) return;
+
+    Point3D projected = center - triNormal * dotProduct(triNormal, center - A);
+
+    // ---- Step 2: 如果球心投影点在三角形内，找到靠近球心的三角面 ----
+    if (pointInTriangle(projected, A, B, C)) {
+        int sign = 1;
+        if (dotProduct(triNormal, center - A) < 0) sign = -1;
+        Point3D hit = center + triNormal * (radius - distance) * sign;
+        DCDByTriangle_sphere_response(threadid, positions, outsideTriIndex, center, radius, hit, collisionStiffness, isCollied, collisionDiag, collisionForce,
+                                      triIsCollided, triColProjectVector, outsideTriOppositeVertIds);
+        return;
+    }
+
+    Point3D triVerts[3] = {A, B, C};
+    // ---- Step 3: 如果球心投影点在半圆柱内，按圆柱排出 ----
+    for (int i = 0; i < 3; i++) {
+        Point3D& Begin = triVerts[i];
+        Point3D& End = triVerts[(i + 1) % 3];
+        Point3D edgeDir = End - Begin;
+        float len = length(edgeDir);
+        normalize(edgeDir);
+        Point3D beginCenter = center - Begin;
+        float t = dotProduct(beginCenter, edgeDir);
+        if (t < 0 || t > len) continue;
+        Point3D closestOnEdge = Begin + edgeDir * t;
+        Point3D radialVec = center - closestOnEdge;
+        float distance = length(radialVec);
+        if (distance >= radius) continue;
+        Point3D Other = triVerts[(i + 2) % 3];
+        Point3D BO = Other - Begin;
+        Point3D BP = projected - Begin;
+        Point3D BECrossBO = crossProduct(edgeDir, BO);
+        Point3D BECrossBH = crossProduct(edgeDir, BP);
+        if (dotProduct(BECrossBO, BECrossBH) >= 0) continue; // 在内半圆柱则跳过
+        normalize(radialVec);
+        Point3D hit = closestOnEdge + radialVec * radius;
+        DCDByTriangle_sphere_response(threadid, positions, outsideTriIndex, center, radius, hit, collisionStiffness, isCollied, collisionDiag, collisionForce,
+                                      triIsCollided, triColProjectVector, outsideTriOppositeVertIds);
+        return;
+    }
+
+    // ---- Step 4: 如果球心投影点在球内，按球排出 ----
+    for (int i = 0; i < 3; i++) {
+        Point3D& V = triVerts[i];
+        Point3D VO = center - V;
+        if (length(VO) > radius) continue;
+        normalize(VO);
+        Point3D hit = V + VO * radius;
+        DCDByTriangle_sphere_response(threadid, positions, outsideTriIndex, center, radius, hit, collisionStiffness, isCollied, collisionDiag, collisionForce,
+                                      triIsCollided, triColProjectVector, outsideTriOppositeVertIds);
+        return;
+    }
+}
+
 void PDSolverData::runDCDByTriangle_sphere(Point3D center, float radius, float collisionStiffness) {
     int threadNum = 512;
     int blockNum = (outsideTriNum + threadNum - 1) / threadNum;
-    DCDByTriangle_sphere<<<blockNum, threadNum>>>(center, radius, collisionStiffness, outsideTriNum, tetVertPos_d, outsideTriIndex_d, outsideTriNormal_d,
-                                                  tetVertIsCollided_d, tetVertCollisionDiag_d, tetVertCollisionForce_d, triIsCollided_d, triColProjectVector_d);
+    DCDByTriangle_sphere_V2<<<blockNum, threadNum>>>(center, radius, collisionStiffness, outsideTriNum, tetVertPos_d, outsideTriIndex_d, outsideTriNormal_d,
+                                                  tetVertIsCollided_d, tetVertCollisionDiag_d, tetVertCollisionForce_d, triIsCollided_d, triColProjectVector_d,
+                                                  outsideTriOppositeVertIds_d);
     PRINT_CUDA_ERROR_AFTER("runDCDByTriangle_sphere");
 }
 

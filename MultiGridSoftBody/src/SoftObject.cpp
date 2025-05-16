@@ -153,17 +153,19 @@ void SoftObject::ReadFromFile() {
 
 void SoftObject::TetFaceExtraction() {
     struct FaceKey {
-        FaceKey(int a, int b, int c) {
+        FaceKey(int a, int b, int c, int d) {
             k[0] = a;
             k[1] = b;
             k[2] = c;
             f[0] = a;
             f[1] = b;
             f[2] = c;
+            opposite = d;
             Sort();
         }
         int k[3];
         int f[3];
+        int opposite;
         bool operator==(const FaceKey& rhs) const { return k[0] == rhs.k[0] && k[1] == rhs.k[1] && k[2] == rhs.k[2]; }
 
         bool operator<(const FaceKey& rhs) const {
@@ -204,10 +206,10 @@ void SoftObject::TetFaceExtraction() {
         int vId3 = m_tetIdxORIG[i * 4 + 3];
 
         // 右手系
-        FaceKey f0 = FaceKey(vId0, vId2, vId1);
-        FaceKey f1 = FaceKey(vId0, vId1, vId3);
-        FaceKey f2 = FaceKey(vId0, vId3, vId2);
-        FaceKey f3 = FaceKey(vId1, vId2, vId3);
+        FaceKey f0 = FaceKey(vId0, vId2, vId1, vId3);
+        FaceKey f1 = FaceKey(vId0, vId1, vId3, vId2);
+        FaceKey f2 = FaceKey(vId0, vId3, vId2, vId1);
+        FaceKey f3 = FaceKey(vId1, vId2, vId3, vId0);
 
         FaceKey fs[4] = {f0, f1, f2, f3};
 
@@ -235,9 +237,11 @@ void SoftObject::TetFaceExtraction() {
         int verIdx0 = f.f[0];
         int verIdx1 = f.f[1];
         int verIdx2 = f.f[2];
+        int vertId3 = f.opposite;
         m_tetFaceIdx.push_back(verIdx0);
         m_tetFaceIdx.push_back(verIdx1);
         m_tetFaceIdx.push_back(verIdx2);
+        m_tetFaceOppositeTetVertIdx.push_back(vertId3);
     }
 
     // 输出obj查看

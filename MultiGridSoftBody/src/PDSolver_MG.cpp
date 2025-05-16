@@ -57,12 +57,13 @@ void PDSolver_MG::interpolate() {
     LOG(INFO) << "绑定的细四面体顶点与粗四面体重心之间的最大距离 = " << maxDistance;
 }
 
-void PDSolver_MG::Init(const vector<float> tetVertPosCoarse, const vector<int>& tetIdxCoarse, const vector<unsigned int>& tetFaceIdxCoarse,
-                       const vector<float> tetVertPosFine, const vector<int>& tetIdxFine, const vector<unsigned int>& tetFaceIdxFine) {
+void PDSolver_MG::Init(const vector<float>& tetVertPosCoarse, const vector<int>& tetIdxCoarse, const vector<unsigned int>& tetFaceIdxCoarse,
+                       const vector<unsigned int>& tetFaceOppositeTetVertIdxCoarse, const vector<float>& tetVertPosFine, const vector<int>& tetIdxFine,
+                       const vector<unsigned int>& tetFaceIdxFine, const vector<unsigned int>& tetFaceOppositeTetVertIdxFine) {
     m_pdSolverCoarse = new PDSolver();
     m_pdSolverFine = new PDSolver();
-    m_pdSolverCoarse->Init(tetVertPosCoarse, tetIdxCoarse, tetFaceIdxCoarse);
-    m_pdSolverFine->Init(tetVertPosFine, tetIdxFine, tetFaceIdxFine);
+    m_pdSolverCoarse->Init(tetVertPosCoarse, tetIdxCoarse, tetFaceIdxCoarse, tetFaceOppositeTetVertIdxCoarse);
+    m_pdSolverFine->Init(tetVertPosFine, tetIdxFine, tetFaceIdxFine, tetFaceOppositeTetVertIdxFine);
     // 建立粗细网格之间的映射关系
     m_interpolationIds.resize(m_pdSolverFine->m_tetVertNum * 4);
     m_interpolationWights.resize(m_pdSolverFine->m_tetVertNum * 4);
@@ -82,44 +83,45 @@ void PDSolver_MG::Init(const vector<float> tetVertPosCoarse, const vector<int>& 
 
     interpolate();
 
-    //for (int vIdFine = 0; vIdFine < tetVertNumFine; ++vIdFine) {
-    //    bool found = false;
-    //    for (int tIdCoarse = 0; tIdCoarse < tetNumCoarse; ++tIdCoarse) {
-    //        vector<float> tetVertPosInATet;
-    //        vector<int> tetVertIdInATet = {tetIdxCoarse[tIdCoarse * 4 + 0], tetIdxCoarse[tIdCoarse * 4 + 1], tetIdxCoarse[tIdCoarse * 4 + 2],
-    //                                       tetIdxCoarse[tIdCoarse * 4 + 3]};
-    //        for (int ii = 0; ii < 4; ii++) {
-    //            int id = tetVertIdInATet[ii];
-    //            tetVertPosInATet.push_back(tetVertPosCoarse[id * 3 + 0]);
-    //            tetVertPosInATet.push_back(tetVertPosCoarse[id * 3 + 1]);
-    //            tetVertPosInATet.push_back(tetVertPosCoarse[id * 3 + 2]);
-    //        }
-    //        // https://www.iue.tuwien.ac.at/phd/nentchev/node31.html
-    //        if (pointInTet(tetVertPosInATet.data(), tetFaceNormalCoarse.data() + tIdCoarse * 12, tetVertPosFine.data() + vIdFine * 3)) {
-    //            vector<float> lambdas =
-    //                barycentricCoordinate(tetVertPosFine.data() + vIdFine * 3, tetCenterCoarse.data() + tIdCoarse * 3, tetFaceAreaCoarse.data() + tIdCoarse * 4,
-    //                                      tetFaceNormalCoarse.data() + tIdCoarse * 12, tetVolumeCoarse[tIdCoarse]);
-    //            for (int ii = 0; ii < 4; ++ii) {
-    //                m_interpolationIds[vIdFine * 4 + ii] = tetVertIdInATet[ii];
-    //                m_interpolationWights[vIdFine * 4 + ii] = lambdas[ii];
-    //            }
-    //            // test
-    //            for (int ii = 0; ii < 4; ii++) {
-    //                float l = lambdas[ii];
-    //                assert(l > -1e-5 && l < 1 + 1e-5);
-    //            }
-    //            Point3D p = {tetVertPosFine[vIdFine * 3 + 0], tetVertPosFine[vIdFine * 3 + 1], tetVertPosFine[vIdFine * 3 + 2]};
-    //            Point3D center = {tetCenterCoarse[tIdCoarse * 3 + 0], tetCenterCoarse[tIdCoarse * 3 + 1], tetCenterCoarse[tIdCoarse * 3 + 2]};
-    //            Point3D centerP = p - center;
-    //            float dis = length(centerP);
-    //            maxDistance = max(maxDistance, dis);
-    //            found = true;
-    //            break;  // 不用继续遍历其他的四面体
-    //        }
-    //    }
-    //    assert(found == true);
-    //}
-    //LOG(INFO) << "绑定的细四面体顶点与粗四面体重心之间的最大距离 = " << maxDistance;
+    // for (int vIdFine = 0; vIdFine < tetVertNumFine; ++vIdFine) {
+    //     bool found = false;
+    //     for (int tIdCoarse = 0; tIdCoarse < tetNumCoarse; ++tIdCoarse) {
+    //         vector<float> tetVertPosInATet;
+    //         vector<int> tetVertIdInATet = {tetIdxCoarse[tIdCoarse * 4 + 0], tetIdxCoarse[tIdCoarse * 4 + 1], tetIdxCoarse[tIdCoarse * 4 + 2],
+    //                                        tetIdxCoarse[tIdCoarse * 4 + 3]};
+    //         for (int ii = 0; ii < 4; ii++) {
+    //             int id = tetVertIdInATet[ii];
+    //             tetVertPosInATet.push_back(tetVertPosCoarse[id * 3 + 0]);
+    //             tetVertPosInATet.push_back(tetVertPosCoarse[id * 3 + 1]);
+    //             tetVertPosInATet.push_back(tetVertPosCoarse[id * 3 + 2]);
+    //         }
+    //         // https://www.iue.tuwien.ac.at/phd/nentchev/node31.html
+    //         if (pointInTet(tetVertPosInATet.data(), tetFaceNormalCoarse.data() + tIdCoarse * 12, tetVertPosFine.data() + vIdFine * 3)) {
+    //             vector<float> lambdas =
+    //                 barycentricCoordinate(tetVertPosFine.data() + vIdFine * 3, tetCenterCoarse.data() + tIdCoarse * 3, tetFaceAreaCoarse.data() + tIdCoarse *
+    //                 4,
+    //                                       tetFaceNormalCoarse.data() + tIdCoarse * 12, tetVolumeCoarse[tIdCoarse]);
+    //             for (int ii = 0; ii < 4; ++ii) {
+    //                 m_interpolationIds[vIdFine * 4 + ii] = tetVertIdInATet[ii];
+    //                 m_interpolationWights[vIdFine * 4 + ii] = lambdas[ii];
+    //             }
+    //             // test
+    //             for (int ii = 0; ii < 4; ii++) {
+    //                 float l = lambdas[ii];
+    //                 assert(l > -1e-5 && l < 1 + 1e-5);
+    //             }
+    //             Point3D p = {tetVertPosFine[vIdFine * 3 + 0], tetVertPosFine[vIdFine * 3 + 1], tetVertPosFine[vIdFine * 3 + 2]};
+    //             Point3D center = {tetCenterCoarse[tIdCoarse * 3 + 0], tetCenterCoarse[tIdCoarse * 3 + 1], tetCenterCoarse[tIdCoarse * 3 + 2]};
+    //             Point3D centerP = p - center;
+    //             float dis = length(centerP);
+    //             maxDistance = max(maxDistance, dis);
+    //             found = true;
+    //             break;  // 不用继续遍历其他的四面体
+    //         }
+    //     }
+    //     assert(found == true);
+    // }
+    // LOG(INFO) << "绑定的细四面体顶点与粗四面体重心之间的最大距离 = " << maxDistance;
 
     maxDistance = 0;
     int tetVertNumCoarse = m_pdSolverCoarse->m_tetVertNum;
@@ -182,18 +184,18 @@ void PDSolver_MG::Step() {
     static float E0 = 0;
     float Ek, Ep, dX, error;
     auto start = std::chrono::high_resolution_clock::now();
-    //m_pdSolverFine->StepForConvergence();
+    // m_pdSolverFine->StepForConvergence();
 
     m_pdSolverCoarse->pdSolverData->runCalculateST(m_pdSolverCoarse->m_damping, m_pdSolverCoarse->m_dt, m_pdSolverCoarse->m_gravityX,
                                                    m_pdSolverCoarse->m_gravityY, m_pdSolverCoarse->m_gravityZ);
     m_pdSolverFine->pdSolverData->runCalculateST(m_pdSolverFine->m_damping, m_pdSolverFine->m_dt, m_pdSolverFine->m_gravityX, m_pdSolverFine->m_gravityY,
                                                  m_pdSolverFine->m_gravityZ);
-    //m_pdSolverFine->RenderOnce();
-    //m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex, m_pdSolverFine->m_tetInvD3x3,
-    //                                           m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX);
-    //E0 = Ep + Ek;
-    //if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
-    //fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", 0, Ek + Ep, Ek, Ep, dX, error);
+    // m_pdSolverFine->RenderOnce();
+    // m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex, m_pdSolverFine->m_tetInvD3x3,
+    //                                            m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX);
+    // E0 = Ep + Ek;
+    // if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
+    // fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", 0, Ek + Ep, Ek, Ep, dX, error);
 
     // 粗网格迭代到收敛
     float omega = 1.0f;
@@ -206,11 +208,11 @@ void PDSolver_MG::Step() {
 
     // 插值到细网格
     runInterpolate();
-    //m_pdSolverFine->RenderOnce();
-    //m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex, m_pdSolverFine->m_tetInvD3x3,
-    //                                           m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX);
-    //if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
-    //fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", 1, Ek + Ep, Ek, Ep, dX, error);
+    // m_pdSolverFine->RenderOnce();
+    // m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex, m_pdSolverFine->m_tetInvD3x3,
+    //                                            m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX);
+    // if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
+    // fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", 1, Ek + Ep, Ek, Ep, dX, error);
 
     // 细网格迭代到收敛
     omega = 1.0f;
@@ -219,21 +221,21 @@ void PDSolver_MG::Step() {
         m_pdSolverFine->pdSolverData->runCalculateIF(m_pdSolverFine->m_volumnStiffness);
         omega = 4 / (4 - m_pdSolverFine->m_rho * m_pdSolverFine->m_rho * omega);
         m_pdSolverFine->pdSolverData->runcalculatePOS(omega, m_pdSolverFine->m_dt);
-        //m_pdSolverFine->RenderOnce();
-        //m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex,
-        //                                           m_pdSolverFine->m_tetInvD3x3, m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX);
-        //if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
-        //fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", i + 2, Ek + Ep, Ek, Ep, dX, error);
+        // m_pdSolverFine->RenderOnce();
+        // m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex,
+        //                                            m_pdSolverFine->m_tetInvD3x3, m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX);
+        // if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
+        // fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", i + 2, Ek + Ep, Ek, Ep, dX, error);
     }
 
     // 平均到粗网格
     runAverage();
 
     // 更新绑定的权重
-    runUpdateMapping(); // 会导致四面体反转
-    //interpolate();
-    //cudaMemcpy(interpolationIds_d, m_interpolationIds.data(), m_pdSolverFine->m_tetVertNum * 4 * sizeof(int), cudaMemcpyHostToDevice);
-    //cudaMemcpy(interpolationWights_d, m_interpolationWights.data(), m_pdSolverFine->m_tetVertNum * 4 * sizeof(float), cudaMemcpyHostToDevice);
+    runUpdateMapping();  // 会导致四面体反转
+    // interpolate();
+    // cudaMemcpy(interpolationIds_d, m_interpolationIds.data(), m_pdSolverFine->m_tetVertNum * 4 * sizeof(int), cudaMemcpyHostToDevice);
+    // cudaMemcpy(interpolationWights_d, m_interpolationWights.data(), m_pdSolverFine->m_tetVertNum * 4 * sizeof(float), cudaMemcpyHostToDevice);
 
     m_pdSolverCoarse->pdSolverData->runCalculateV(m_pdSolverCoarse->m_dt);
     m_pdSolverFine->pdSolverData->runCalculateV(m_pdSolverFine->m_dt);

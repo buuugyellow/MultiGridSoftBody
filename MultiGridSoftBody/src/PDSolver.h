@@ -6,39 +6,40 @@
 
 using namespace std;
 struct PDSolverData {
-    int tetNum;                         // 四面体数量
-    int tetVertNum;                     // 四面体顶点数量
-    int outsideTriNum;                  // 外表面三角形数量
-    int outsideTetVertNum;              // 外表面四面体顶点数量
-    float* tetVertPos_d;                // 当前位置，tetVertNum*3
-    int* tetIndex_d;                    // 四面体索引
-    unsigned int* outsideTriIndex_d;    // 外表面的三角形索引
-    float* outsideTriNormal_d;          // 外表面三角形法向量
-    unsigned int* outsideTetVertIds_d;  // 外表面四面体顶点索引集合
-    float* tetVertNormal_d;             // 四面体顶点的法向量，对于外表面顶点，平均所在的三角形的法向量
-    float* tetInvD3x3_d;                // 逆矩阵, tetNum*9
-    float* tetInvD3x4_d;                // Ac阵， tetNum*12
-    float* tetVolume_d;                 // 四面体体积，tetNum
-    float* tetVolumeDiag_d;             // 四面体顶点形变梯度，tetVertNum_d
-    float* tetVertMass_d;               // 质量，tetVertNum_d*3
-    float* tetVertFixed_d;              // 四面体顶点是否固定，0.0f表示没有固定，tetVertNum
-    float* tetVertPos_last_d;           // 上一时刻位置，tetVertNum*3
-    float* tetVertPos_old_d;            // st，tetVertNum*3
-    float* tetVertPos_prev_d;           // 上一次迭代，tetVertNum*3
-    float* tetVertPos_next_d;           // 下一步位置，tetVertNum*3
-    float* tetVertVelocity_d;           // 速度，tetVertNum*3
-    float* tetVertVelocityBak_d;        // 速度的备份，用于收敛 step 中的计算
-    float* tetVertExternForce_d;        // 外力，tetVertNum*3
-    float* tetVertForce_d;              // 顶点受力, tetVertNum*3
-    int* tetVertIsCollided_d;           // 发生碰撞大于 0，否则为 0
-    int* triIsCollided_d;               // 三角形是否发生碰撞
-    float* triColProjectVector_d;       // 三角形碰撞排出的向量
-    float* tetVertCollisionDiag_d;      // 碰撞能量的 Hessian 阵的对角阵（向量存储）
-    float* tetVertCollisionForce_d;     // 碰撞能量的一阶导向量
+    int tetNum;                                 // 四面体数量
+    int tetVertNum;                             // 四面体顶点数量
+    int outsideTriNum;                          // 外表面三角形数量
+    int outsideTetVertNum;                      // 外表面四面体顶点数量
+    float* tetVertPos_d;                        // 当前位置，tetVertNum*3
+    int* tetIndex_d;                            // 四面体索引
+    unsigned int* outsideTriIndex_d;            // 外表面的三角形索引
+    unsigned int* outsideTriOppositeVertIds_d;  // 外表面三角形对应的四面体顶点索引
+    float* outsideTriNormal_d;                  // 外表面三角形法向量
+    unsigned int* outsideTetVertIds_d;          // 外表面四面体顶点索引集合
+    float* tetVertNormal_d;                     // 四面体顶点的法向量，对于外表面顶点，平均所在的三角形的法向量
+    float* tetInvD3x3_d;                        // 逆矩阵, tetNum*9
+    float* tetInvD3x4_d;                        // Ac阵， tetNum*12
+    float* tetVolume_d;                         // 四面体体积，tetNum
+    float* tetVolumeDiag_d;                     // 四面体顶点形变梯度，tetVertNum_d
+    float* tetVertMass_d;                       // 质量，tetVertNum_d*3
+    float* tetVertFixed_d;                      // 四面体顶点是否固定，0.0f表示没有固定，tetVertNum
+    float* tetVertPos_last_d;                   // 上一时刻位置，tetVertNum*3
+    float* tetVertPos_old_d;                    // st，tetVertNum*3
+    float* tetVertPos_prev_d;                   // 上一次迭代，tetVertNum*3
+    float* tetVertPos_next_d;                   // 下一步位置，tetVertNum*3
+    float* tetVertVelocity_d;                   // 速度，tetVertNum*3
+    float* tetVertVelocityBak_d;                // 速度的备份，用于收敛 step 中的计算
+    float* tetVertExternForce_d;                // 外力，tetVertNum*3
+    float* tetVertForce_d;                      // 顶点受力, tetVertNum*3
+    int* tetVertIsCollided_d;                   // 发生碰撞大于 0，否则为 0
+    int* triIsCollided_d;                       // 三角形是否发生碰撞
+    float* triColProjectVector_d;               // 三角形碰撞排出的向量
+    float* tetVertCollisionDiag_d;              // 碰撞能量的 Hessian 阵的对角阵（向量存储）
+    float* tetVertCollisionForce_d;             // 碰撞能量的一阶导向量
 
     void Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
               float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h, int outsideTriNum_h, unsigned int* outsideTriIndex_h, int outsideTetVertNum_h,
-              unsigned int* outsideTetVertIds_h);
+              unsigned int* outsideTetVertIds_h, unsigned int* outsideTriOppositeVertIds_h);
     void runCalculateST(float m_damping, float m_dt, float m_gravityX, float m_gravityY, float m_gravityZ);
     void runClearTemp();
     void runCalculateIF(float m_volumnStiffness);
@@ -76,8 +77,9 @@ public:
     int m_outsideTriNum;
     int m_outsideTetVertNum;
     vector<int> m_tetIndex;
-    vector<unsigned int> m_outsideTriIndex;  // 三角形索引 [(v0,v2,v4), (v4,v6,v8)...]
-    vector<unsigned int> m_outsideTetVertIds;  // 在表面的顶点索引集合 [v0, v2, v4, v6, v8...]
+    vector<unsigned int> m_outsideTriIndex;           // 三角形索引 [(v0,v2,v4), (v4,v6,v8)...]
+    vector<unsigned int> m_outsideTriOppositeVertId;  // 表面三角形对应的四面体顶点索引
+    vector<unsigned int> m_outsideTetVertIds;         // 在表面的顶点索引集合 [v0, v2, v4, v6, v8...]
     vector<float> m_tetInvD3x3;
     vector<float> m_tetInvD3x4;
     vector<float> m_tetVolume;
@@ -90,7 +92,7 @@ public:
     vector<float> m_tetCenter;      // 四面体重心坐标
     PDSolverData* pdSolverData;
 
-    void Init(const vector<float> tetVertPos, const vector<int>& tetIdx, const vector<unsigned int>& tetFaceIdx);
+    void Init(const vector<float> tetVertPos, const vector<int>& tetIdx, const vector<unsigned int>& tetFaceIdx, vector<unsigned int> tetFaceOppositeTetVertIdx);
     void Step();
     void StepForConvergence();
     void InitVolumeConstraint();

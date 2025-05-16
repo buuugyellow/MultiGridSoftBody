@@ -235,7 +235,7 @@ void renderOnce() {
         g_render->UpdatePartical(vertNum, g_posColorForRender.data());
     }
     
-    //// 更新碰撞三角形排出位置
+    // 更新碰撞三角形排出位置，碰撞检测 debug
     //vector<unsigned int> triIdx;
     //vector<float> vert9float;
     //for (int triId = 0; triId < g_simulator->m_triIsCollide.size(); triId++) {
@@ -280,7 +280,7 @@ void renderOnce() {
 void init() {
     config_dataDir = "../data/";
     config_tempDir = "../temp/";
-    config_objName = "Y_12_120_12";  // 单一物体
+    config_objName = "Y_4_40_4";  // 单一物体
     config_objName_coarse = "cube40_4_4";
     g_synOrAsy = true;
     g_solverType = PD;

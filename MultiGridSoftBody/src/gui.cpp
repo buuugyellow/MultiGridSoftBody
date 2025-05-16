@@ -11,7 +11,7 @@ using namespace std;
 bool g_UIShowMesh = true;
 bool g_UIWireframe = false;
 bool g_UIShowParticle = true;
-bool g_UIEnergeOrCllisioin = false;
+bool g_UIEnergeOrCllisioin = true;
 float g_UIParticleR = 0.05f;
 int g_key = 0;
 

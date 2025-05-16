@@ -23,9 +23,11 @@ public:
     vector<int> m_tetIdxORIG;        // 四面体顶点索引
 
     // 处理原始数据得到的数据
-    vector<unsigned int> m_tetFaceIdx;  // 表面的三角形索引
+    vector<unsigned int> m_tetFaceIdx;            // 表面的三角形索引
+    vector<unsigned int> m_tetFaceOppositeTetVertIdx;  // 表面三角形对应的另一个四面体顶点索引，用于四面体碰撞响应
 
-    SoftObject(string name, string objFile, string tetFile, string tetFaceFile) : m_name(name), m_objFile(objFile), m_tetFile(tetFile),m_tetFaceFile(tetFaceFile), m_renderObjId(-1) {};
+    SoftObject(string name, string objFile, string tetFile, string tetFaceFile)
+        : m_name(name), m_objFile(objFile), m_tetFile(tetFile), m_tetFaceFile(tetFaceFile), m_renderObjId(-1) {};
 
     void ReadFromFile();
     void TetFaceExtraction();

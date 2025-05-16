@@ -45,7 +45,7 @@ void Simulator::Init() {
     LOG(INFO) << "coarse TetFaceExtraction 结束";
 
     // 碰撞体初始化
-    m_sphereColliders.push_back(shared_ptr<SphereCollider>(new SphereCollider({-5, 0, 0}, 1)));
+    m_sphereColliders.push_back(shared_ptr<SphereCollider>(new SphereCollider({-5, 0, 0}, 0.3)));
 
     // 中间变量初始化
     m_tetVertPos = m_softObject->m_tetVertPosORIG;
@@ -66,12 +66,13 @@ void Simulator::Init() {
     switch (g_solverType) {
         case PD:
             m_solver = new PDSolver();
-            m_solver->Init(m_softObject->m_tetVertPosORIG, m_softObject->m_tetIdxORIG, m_softObject->m_tetFaceIdx);
+            m_solver->Init(m_softObject->m_tetVertPosORIG, m_softObject->m_tetIdxORIG, m_softObject->m_tetFaceIdx, m_softObject->m_tetFaceOppositeTetVertIdx);
             break;
         case PD_MG:
             m_solver_mg = new PDSolver_MG();
             m_solver_mg->Init(m_softObject_coarse->m_tetVertPosORIG, m_softObject_coarse->m_tetIdxORIG, m_softObject_coarse->m_tetFaceIdx,
-                              m_softObject->m_tetVertPosORIG, m_softObject->m_tetIdxORIG, m_softObject->m_tetFaceIdx);
+                              m_softObject_coarse->m_tetFaceOppositeTetVertIdx, m_softObject->m_tetVertPosORIG, m_softObject->m_tetIdxORIG,
+                              m_softObject->m_tetFaceIdx, m_softObject->m_tetFaceOppositeTetVertIdx);
             break;
     }
     LOG(INFO) << "solver: " << g_solverType << " Init 结束";
@@ -116,20 +117,20 @@ void Simulator::Update() {
     g_totalDuration = (chrono::duration_cast<chrono::microseconds>(begin_time - last_time)).count();
     last_time = begin_time;
 
-    if (g_stepCnt > 80) {
-        if (timeOutputFile) {
-            fclose(timeOutputFile);
-            timeOutputFile = nullptr;
-        }
-        if (energyOutputFile) {
-            fclose(energyOutputFile);
-            energyOutputFile = nullptr;
-        }
-        renderOnce();
-        return;
-    }
-    g_stepCnt++;
-    cout << "step frame " << g_stepCnt << endl;
+    //if (g_stepCnt > 80) {
+    //    if (timeOutputFile) {
+    //        fclose(timeOutputFile);
+    //        timeOutputFile = nullptr;
+    //    }
+    //    if (energyOutputFile) {
+    //        fclose(energyOutputFile);
+    //        energyOutputFile = nullptr;
+    //    }
+    //    renderOnce();
+    //    return;
+    //}
+    //g_stepCnt++;
+    //cout << "step frame " << g_stepCnt << endl;
 
     UpdateCollider();
     switch (g_solverType) {
