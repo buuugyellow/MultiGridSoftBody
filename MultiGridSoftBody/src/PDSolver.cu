@@ -294,12 +294,19 @@ __global__ void DCDByPoint_sphere(Point3D center, float radius, float collisionS
     if (directDir != nullptr) dir = {directDir[xId], directDir[yId], directDir[zId]};
 
     float distance = length(cp);
+    float oldRadius = radius;
+    //radius *= 1.5f;
     if (distance < radius) {
         // (cp + t * dir)^2 = r^2
         float a = 1;
         float b = 2 * dotProduct(cp, dir);
         float c = dotProduct(cp, cp) - radius * radius;
         float t = (-b + sqrt(b * b - 4 * a * c)) / (2 * a);
+
+        //if (t > 0.5f * oldRadius) {
+        //    isCollied[threadid] = 1;
+        //    collisionDepth[threadid] = t - 0.5f * oldRadius;
+        //}
         //t = t / 30.0f;
         Point3D colP = p + dir * t;
         Point3D centerColP = colP - center;
