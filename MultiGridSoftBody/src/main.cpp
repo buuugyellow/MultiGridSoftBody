@@ -23,9 +23,11 @@ string config_timeOutputCsv;
 string config_energyOutputCsv;
 string config_energyStepInCsv;
 string config_energyStepOutCsv;
+string config_collisionInfoOutCsv;
 FILE* timeOutputFile;
 FILE* energyOutputFile;
-FILE* energyStepFile;           // 每次 step 结束之后的能量，用于记录收敛状态的能量
+FILE* energyStepFile;  // 每次 step 结束之后的能量，用于记录收敛状态的能量
+FILE* collisionInfoFile;
 bool config_writeOrReadEnergy;  // 读取或者写入收敛能量文件
 vector<float> g_conEnergy;      // 保留读取的收敛能量
 vector<float> g_conEk;          // 保留读取的收敛能量
@@ -159,6 +161,13 @@ void fileIO() {
             }
         }
     }
+
+    err = fopen_s(&collisionInfoFile, config_collisionInfoOutCsv.c_str(), "w+");
+    if (err) {
+        LOG(ERROR) << "打开 csv 文件失败: " << config_collisionInfoOutCsv.c_str();
+    } else {
+        fprintf(collisionInfoFile, "collisionCnt,maxDepth\n");
+    }
 }
 
 void initRenderAsy() { thread(renderLoop).detach(); }
@@ -204,13 +213,20 @@ void renderOnce() {
                              sphere->m_vertNum * 9 * sizeof(float), sphere->m_vert9float.data());
     }
 
+    // 记录碰撞信息
+    g_collidedVertCnt = 0;
+    float maxDepth = -FLT_MAX;
+    for (int i = 0; i < vertNum; i++) {
+        int isCollided = g_simulator->m_tetVertIsCollide[i];
+        if (isCollided > 0) g_collidedVertCnt++;
+        float collisionDepth = g_simulator->m_tetVertCollisionDepth[i];
+        maxDepth = max(maxDepth, collisionDepth);
+    }
+    fprintf(collisionInfoFile, "%d,%f\n", g_collidedVertCnt, maxDepth);
+
     // 更新可视化的软体顶点
     if (g_UIShowParticle) {
-        g_collidedVertCnt = 0;
         for (int i = 0; i < vertNum; i++) {
-            int isCollided = g_simulator->m_tetVertIsCollide[i];
-            if (isCollided > 0) g_collidedVertCnt++;
-
             g_posColorForRender[i * 6 + 0] = g_simulator->m_tetVertPos[i * 3 + 0];
             g_posColorForRender[i * 6 + 1] = g_simulator->m_tetVertPos[i * 3 + 1];
             g_posColorForRender[i * 6 + 2] = g_simulator->m_tetVertPos[i * 3 + 2];
@@ -226,7 +242,7 @@ void renderOnce() {
                 Point3D colorEnd = {1, 0, 0};
                 color = colorBegin + (colorEnd - colorBegin) * EpMapValue;
             } else {
-                color = (isCollided > 0) ? Point3D(1, 0, 0) : Point3D(0, 1, 0);
+                color = (g_simulator->m_tetVertIsCollide[i] > 0) ? Point3D(1, 0, 0) : Point3D(0, 1, 0);
             }
             g_posColorForRender[i * 6 + 3] = color.x;
             g_posColorForRender[i * 6 + 4] = color.y;
@@ -234,11 +250,11 @@ void renderOnce() {
         }
         g_render->UpdatePartical(vertNum, g_posColorForRender.data());
     }
-    
+
     // 更新碰撞三角形排出位置，碰撞检测 debug
-    //vector<unsigned int> triIdx;
-    //vector<float> vert9float;
-    //for (int triId = 0; triId < g_simulator->m_triIsCollide.size(); triId++) {
+    // vector<unsigned int> triIdx;
+    // vector<float> vert9float;
+    // for (int triId = 0; triId < g_simulator->m_triIsCollide.size(); triId++) {
     //    int triIsCollide = g_simulator->m_triIsCollide[triId];
     //    if (triIsCollide) {
     //        unsigned int idA = g_simulator->m_tetFaceIdx[triId * 3 + 0];
@@ -269,7 +285,7 @@ void renderOnce() {
     //        triIdx.push_back(vId0 + 2);
     //    }
     //}
-    //g_render->UpdateMesh(g_simulator->m_triMoveObjId, triIdx.size(), triIdx.size() * sizeof(unsigned int), triIdx.data(), vert9float.size() * sizeof(float),
+    // g_render->UpdateMesh(g_simulator->m_triMoveObjId, triIdx.size(), triIdx.size() * sizeof(unsigned int), triIdx.data(), vert9float.size() * sizeof(float),
     //                     vert9float.data());
 
     // 渲染
@@ -280,8 +296,8 @@ void renderOnce() {
 void init() {
     config_dataDir = "../data/";
     config_tempDir = "../temp/";
-    config_objName = "Y_4_40_4";  // 单一物体
-    config_objName_coarse = "cube40_4_4";
+    config_objName = "Y_12_120_12";  // 单一物体
+    config_objName_coarse = "Y_4_40_4";
     g_synOrAsy = true;
     g_solverType = PD;
     FLAGS_log_dir = config_tempDir + "log/";
@@ -289,6 +305,7 @@ void init() {
     config_energyOutputCsv = config_tempDir + "energy.csv";
     config_energyStepInCsv = config_dataDir + "120_256iter.csv";
     config_energyStepOutCsv = config_tempDir + "energyStepOut.csv";
+    config_collisionInfoOutCsv = config_tempDir + "collisionInfo.csv";
     config_writeOrReadEnergy = false;
     FLAGS_logtostderr = true;
     FLAGS_stderrthreshold = 0;

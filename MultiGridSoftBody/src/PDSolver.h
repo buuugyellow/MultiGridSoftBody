@@ -32,6 +32,7 @@ struct PDSolverData {
     float* tetVertExternForce_d;                // 外力，tetVertNum*3
     float* tetVertForce_d;                      // 顶点受力, tetVertNum*3
     int* tetVertIsCollided_d;                   // 发生碰撞大于 0，否则为 0
+    float* tetVertCollisionDepth_d;               // 顶点碰撞深度，目前用于可视化
     int* triIsCollided_d;                       // 三角形是否发生碰撞
     float* triColProjectVector_d;               // 三角形碰撞排出的向量
     float* tetVertCollisionDiag_d;              // 碰撞能量的 Hessian 阵的对角阵（向量存储）

@@ -29,6 +29,7 @@ public:
     vector<float> m_tetVertEpSum;      // 所有顶点相关联的四面体的能量的总和
     vector<float> m_tetVertVSum;       // 所有顶点相关联的四面体的体积的总和
     vector<int> m_tetVertIsCollide;   // 四面体顶点碰撞
+    vector<float> m_tetVertCollisionDepth; // 四面体顶点碰撞深度
     int m_triMoveObjId;                 // 可视化排出三角形，以后一定用一个简单的 shader
     vector<int> m_triIsCollide;         // 三角形碰撞
     vector<float> m_triMoveVec;         // 三角形排出向量

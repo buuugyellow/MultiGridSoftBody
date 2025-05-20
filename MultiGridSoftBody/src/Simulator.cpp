@@ -45,7 +45,7 @@ void Simulator::Init() {
     LOG(INFO) << "coarse TetFaceExtraction 结束";
 
     // 碰撞体初始化
-    m_sphereColliders.push_back(shared_ptr<SphereCollider>(new SphereCollider({-5, 0, 0}, 0.3)));
+    m_sphereColliders.push_back(shared_ptr<SphereCollider>(new SphereCollider({-5, 0, 0}, 1)));
 
     // 中间变量初始化
     m_tetVertPos = m_softObject->m_tetVertPosORIG;
@@ -59,6 +59,7 @@ void Simulator::Init() {
     m_tetVertEpSum.resize(m_tetVertPos.size() / 3);
     m_tetVertVSum.resize(m_tetVertPos.size() / 3);
     m_tetVertIsCollide.resize(m_tetVertPos.size() / 3);
+    m_tetVertCollisionDepth.resize(m_tetVertPos.size() / 3);
     m_triIsCollide.resize(m_tetFaceIdx.size() / 3);
     m_triMoveVec.resize(m_tetFaceIdx.size());
 
@@ -117,20 +118,20 @@ void Simulator::Update() {
     g_totalDuration = (chrono::duration_cast<chrono::microseconds>(begin_time - last_time)).count();
     last_time = begin_time;
 
-    //if (g_stepCnt > 80) {
-    //    if (timeOutputFile) {
-    //        fclose(timeOutputFile);
-    //        timeOutputFile = nullptr;
-    //    }
-    //    if (energyOutputFile) {
-    //        fclose(energyOutputFile);
-    //        energyOutputFile = nullptr;
-    //    }
-    //    renderOnce();
-    //    return;
-    //}
-    //g_stepCnt++;
-    //cout << "step frame " << g_stepCnt << endl;
+    if (g_stepCnt > 80) {
+        if (timeOutputFile) {
+            fclose(timeOutputFile);
+            timeOutputFile = nullptr;
+        }
+        if (energyOutputFile) {
+            fclose(energyOutputFile);
+            energyOutputFile = nullptr;
+        }
+        renderOnce();
+        return;
+    }
+    g_stepCnt++;
+    cout << "step frame " << g_stepCnt << endl;
 
     UpdateCollider();
     switch (g_solverType) {

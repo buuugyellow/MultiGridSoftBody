@@ -143,7 +143,7 @@ void PDSolver::SetFixedVert() {
 
 void PDSolver::Init(const vector<float> tetVertPos, const vector<int>& tetIdx, const vector<unsigned int>& tetFaceIdx,
                     vector<unsigned int> tetFaceOppositeTetVertIdx) {
-    m_iterNum = 64;
+    m_iterNum = 128;
     m_iterNumCvg = 128;
     m_dt = 1.0f / 30.0f;
     m_damping = 0.5f;
@@ -233,8 +233,8 @@ void PDSolver::Step() {
     float omega = 1.0f;
     for (int i = 0; i < m_iterNum; i++) {
         pdSolverData->runClearTemp();
-        //DCDByPoint();
-        DCDByTriangle();
+        DCDByPoint();
+        //DCDByTriangle();
         pdSolverData->runCalculateIF(m_volumnStiffness);
         omega = 4 / (4 - m_rho * m_rho * omega);
         pdSolverData->runcalculatePOS(omega, m_dt);

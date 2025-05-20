@@ -199,8 +199,9 @@ void PDSolver_MG::Step() {
 
     // 粗网格迭代到收敛
     float omega = 1.0f;
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 20; i++) {
         m_pdSolverCoarse->pdSolverData->runClearTemp();
+        m_pdSolverCoarse->DCDByTriangle();
         m_pdSolverCoarse->pdSolverData->runCalculateIF(m_pdSolverCoarse->m_volumnStiffness);
         omega = 4 / (4 - m_pdSolverCoarse->m_rho * m_pdSolverCoarse->m_rho * omega);
         m_pdSolverCoarse->pdSolverData->runcalculatePOS(omega, m_pdSolverCoarse->m_dt);
@@ -216,8 +217,9 @@ void PDSolver_MG::Step() {
 
     // 细网格迭代到收敛
     omega = 1.0f;
-    for (int i = 0; i < 19; i++) {
+    for (int i = 0; i < 20; i++) {
         m_pdSolverFine->pdSolverData->runClearTemp();
+        m_pdSolverFine->DCDByPoint();
         m_pdSolverFine->pdSolverData->runCalculateIF(m_pdSolverFine->m_volumnStiffness);
         omega = 4 / (4 - m_pdSolverFine->m_rho * m_pdSolverFine->m_rho * omega);
         m_pdSolverFine->pdSolverData->runcalculatePOS(omega, m_pdSolverFine->m_dt);
@@ -245,6 +247,7 @@ void PDSolver_MG::Step() {
     duration_physical = duration.count();
     fprintf(timeOutputFile, "%d,%f\n", g_stepCnt, duration_physical);
 
-    // m_pdSolverFine->pdSolverData->runCpyTetVertForRender();
+    m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex, m_pdSolverFine->m_tetInvD3x3,
+                                                m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX, true);
     m_pdSolverFine->RenderOnce();
 }
