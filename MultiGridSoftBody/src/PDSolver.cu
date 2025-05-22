@@ -71,6 +71,8 @@ void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* 
     cudaMemset(triColProjectVector_d, 0, outsideTriNum * 3 * sizeof(float));
     cudaMalloc((void**)&tetVertCollisionDepth_d, tetVertNum * sizeof(float));
     cudaMemset(tetVertCollisionDepth_d, 0, tetVertNum * sizeof(float));
+    cudaMalloc((void**)&tetVertCollisionEnergy_d, tetVertNum * sizeof(float));
+    cudaMemset(tetVertCollisionEnergy_d, 0, tetVertNum * sizeof(float));
     PRINT_CUDA_ERROR_AFTER("Init");
 }
 
@@ -280,7 +282,7 @@ void PDSolverData::runResetPosVel() {
 void PDSolverData::runSaveVel() { cudaMemcpy(tetVertVelocityBak_d, tetVertVelocity_d, tetVertNum * 3 * sizeof(float), cudaMemcpyDeviceToDevice); }
 
 __global__ void DCDByPoint_sphere(Point3D center, float radius, float collisionStiffness, int vertexNum, float* positions, float* directDir, int* isCollied,
-                                  float* collisionDiag, float* collisionForce, float* collisionDepth) {
+                                  float* collisionDiag, float* collisionForce, float* collisionDepth, float* collisionEnergy) {
     unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
     if (threadid >= vertexNum) return;
 
@@ -323,6 +325,7 @@ __global__ void DCDByPoint_sphere(Point3D center, float radius, float collisionS
         collisionForce[xId] += collisionStiffness * t * colNDotDir * colN.x;
         collisionForce[yId] += collisionStiffness * t * colNDotDir * colN.y;
         collisionForce[zId] += collisionStiffness * t * colNDotDir * colN.z;
+        collisionEnergy[threadid] += collisionStiffness * powf(dotProduct(p - colP, colN), 2);
 
         // 约束能量是 k * (p - colP)^2
         //collisionDiag[xId] += collisionStiffness;
@@ -385,7 +388,7 @@ void PDSolverData::runDCDByPoint_sphere(Point3D center, float radius, float coll
     int threadNum = 512;
     int blockNum = (tetVertNum + threadNum - 1) / threadNum;
     DCDByPoint_sphere<<<blockNum, threadNum>>>(center, radius, collisionStiffness, tetVertNum, tetVertPos_d, nullptr, tetVertIsCollided_d,
-                                               tetVertCollisionDiag_d, tetVertCollisionForce_d, tetVertCollisionDepth_d);
+                                               tetVertCollisionDiag_d, tetVertCollisionForce_d, tetVertCollisionDepth_d, tetVertCollisionEnergy_d);
     // 仅表面顶点进行碰撞检测以及响应
     //int threadNum = 512;
     //int blockNum = (outsideTetVertNum + threadNum - 1) / threadNum;
@@ -696,6 +699,7 @@ void PDSolverData::runClearCollision() {
     cudaMemset(tetVertIsCollided_d, 0, tetVertNum * sizeof(int));
     cudaMemset(triIsCollided_d, 0, outsideTriNum * sizeof(int));
     cudaMemset(tetVertCollisionDepth_d, 0, tetVertNum * sizeof(float));
+    cudaMemset(tetVertCollisionEnergy_d, 0, tetVertNum * sizeof(float));
     cudaMemset(tetVertCollisionDiag_d, 0, tetVertNum * 3 * sizeof(float));
     cudaMemset(tetVertCollisionForce_d, 0, tetVertNum * 3 * sizeof(float));
 }
@@ -817,7 +821,8 @@ void PDSolverData::runTestConvergence(int iter) {
 }
 
 void PDSolverData::runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex, const vector<float>& m_tetInvD3x3,
-                                const vector<float>& m_tetVolume, float m_volumnStiffness, float& Ek, float& Ep, float& dX, bool calEveryVertEp) {
+                                const vector<float>& m_tetVolume, float m_volumnStiffness, float& Ek, float& Ep, float& Ec, float& Nc, float& dX,
+                                bool calEveryVertEp) {
     vector<float> tetVertPos_h(tetVertNum * 3);
     vector<float> tetVertPos_old_h(tetVertNum * 3);
     vector<float> tetVertPos_prev_h(tetVertNum * 3);
@@ -830,7 +835,7 @@ void PDSolverData::runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, 
         fill(g_simulator->m_tetVertEpSum.begin(), g_simulator->m_tetVertEpSum.end(), 0);
         fill(g_simulator->m_tetVertVSum.begin(), g_simulator->m_tetVertVSum.end(), 0);
     }
-    Ek = Ep = dX = 0;
+    Ek = Ep = Ec = Nc = dX = 0;
 
     // 计算 deltaX, Ek
     for (int i = 0; i < tetVertNum; i++) {
@@ -902,6 +907,16 @@ void PDSolverData::runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, 
             g_simulator->m_tetVertVSum[vIndex2] += volumn;
             g_simulator->m_tetVertVSum[vIndex3] += volumn;
         }
+    }
+
+    // 计算 Ec
+    vector<float> tetVertCollisionEnergy_h(tetVertNum);
+    vector<int> tetVertIsCollided_h(tetVertNum);
+    cudaMemcpy(tetVertCollisionEnergy_h.data(), tetVertCollisionEnergy_d, tetVertNum * sizeof(float), cudaMemcpyDeviceToHost);
+    cudaMemcpy(tetVertIsCollided_h.data(), tetVertIsCollided_d, tetVertNum * sizeof(int), cudaMemcpyDeviceToHost);
+    for (int i = 0; i < tetVertNum; i++) {
+        Ec += tetVertCollisionEnergy_h[i];
+        Nc += (tetVertIsCollided_h[i] > 0 ? 1 : 0);
     }
 
     if (calEveryVertEp) {

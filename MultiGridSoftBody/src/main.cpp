@@ -124,7 +124,7 @@ void fileIO() {
     if (err) {
         LOG(ERROR) << "打开 csv 文件失败: " << config_energyOutputCsv.c_str();
     } else {
-        fprintf(energyOutputFile, "iter,Energy,Ek,Ep,deltaX,error\n");
+        fprintf(energyOutputFile, "iter,Energy,Ek,Ep,Ec,Nc,deltaX,error\n");
     }
 
     err = fopen_s(&timeOutputFile, config_timeOutputCsv.c_str(), "w+");

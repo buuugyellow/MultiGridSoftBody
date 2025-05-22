@@ -182,7 +182,7 @@ void PDSolver_MG::Init(const vector<float>& tetVertPosCoarse, const vector<int>&
 
 void PDSolver_MG::Step() {
     static float E0 = 0;
-    float Ek, Ep, dX, error;
+    float Ek, Ep, Ec, Nc, dX, error;
     auto start = std::chrono::high_resolution_clock::now();
     // m_pdSolverFine->StepForConvergence();
 
@@ -248,6 +248,6 @@ void PDSolver_MG::Step() {
     fprintf(timeOutputFile, "%d,%f\n", g_stepCnt, duration_physical);
 
     m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex, m_pdSolverFine->m_tetInvD3x3,
-                                                m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, dX, true);
+                                                m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, Ec, Nc, dX, true);
     m_pdSolverFine->RenderOnce();
 }

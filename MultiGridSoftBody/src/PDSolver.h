@@ -33,6 +33,7 @@ struct PDSolverData {
     float* tetVertForce_d;                      // 顶点受力, tetVertNum*3
     int* tetVertIsCollided_d;                   // 发生碰撞大于 0，否则为 0
     float* tetVertCollisionDepth_d;               // 顶点碰撞深度，目前用于可视化
+    float* tetVertCollisionEnergy_d;            // 顶点碰撞能量，用于数据分析
     int* triIsCollided_d;                       // 三角形是否发生碰撞
     float* triColProjectVector_d;               // 三角形碰撞排出的向量
     float* tetVertCollisionDiag_d;              // 碰撞能量的 Hessian 阵的对角阵（向量存储）
@@ -51,7 +52,7 @@ struct PDSolverData {
     void runSaveVel();
     void runTestConvergence(int iter);
     void runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex, const vector<float>& m_tetInvD3x3,
-                      const vector<float>& m_tetVolume, float m_volumnStiffness, float& Ek, float& Ep, float& dX, bool calEveryVertEp = false);
+                      const vector<float>& m_tetVolume, float m_volumnStiffness, float& Ek, float& Ep, float& Ec, float& Nc, float& dX, bool calEveryVertEp = false);
     void runClearCollision();
     void runDCDByPoint_sphere(Point3D center, float radius, float collisionStiffness);
     void runUpdateTriNormal();

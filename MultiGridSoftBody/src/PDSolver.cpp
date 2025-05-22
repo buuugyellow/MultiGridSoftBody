@@ -177,26 +177,27 @@ void PDSolver::Init(const vector<float> tetVertPos, const vector<int>& tetIdx, c
 }
 
 void PDSolver::StepForConvergence() {
-    float Ek, Ep, dX;
+    float Ek, Ep, Ec, Nc, dX;
     pdSolverData->runSaveVel();
     pdSolverData->runCalculateST(m_damping, m_dt, m_gravityX, m_gravityY, m_gravityZ);
-    pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, dX);
-    fprintf(energyOutputFile, "%d,%f,%f,%f,%f\n", 0, Ek + Ep, Ek, Ep, dX);
+    pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, Ec, Nc, dX);
+    fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f,%f\n", 0, Ek + Ep + Ec, Ek, Ep, Ec, Nc, dX);
     float omega = 1.0f;
     for (int i = 0; i < m_iterNumCvg; i++) {
         pdSolverData->runClearTemp();
+        DCDByPoint();
         pdSolverData->runCalculateIF(m_volumnStiffness);
         omega = 4 / (4 - m_rho * m_rho * omega);
         pdSolverData->runcalculatePOS(omega, m_dt);
 
-        pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, dX);
-        fprintf(energyOutputFile, "%d,%f,%f,%f,%f\n", i + 1, Ek + Ep, Ek, Ep, dX);
+        pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, Ec, Nc, dX);
+        fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f,%f\n", i + 1, Ek + Ep + Ec, Ek, Ep, Ec, Nc, dX);
     }
     pdSolverData->runResetPosVel();
-    g_conEnergy_V2 = Ek + Ep;
+    g_conEnergy_V2 = Ek + Ep + Ec;
 }
 
-void PDSolver::RenderOnce() { 
+void PDSolver::RenderOnce() {
     pdSolverData->runCpyTetVertForRender();
     renderOnce();
 }
@@ -208,7 +209,7 @@ void PDSolver::DCDByPoint() {
     }
 }
 
-void PDSolver::DCDByTriangle() { 
+void PDSolver::DCDByTriangle() {
     pdSolverData->runClearCollision();
     pdSolverData->runUpdateTriNormal();
     for (auto sphere : g_simulator->m_sphereColliders) {
@@ -217,32 +218,35 @@ void PDSolver::DCDByTriangle() {
 }
 
 void PDSolver::Step() {
-    static float E0 = 0;
-    float Ek, Ep, dX, error;
     auto start = std::chrono::high_resolution_clock::now();
-
+    static float E0 = 0;
+    float Ek, Ep, Ec, Nc, dX, error;
+    error = 0;
     //StepForConvergence();
 
     pdSolverData->runCalculateST(m_damping, m_dt, m_gravityX, m_gravityY, m_gravityZ);
-    //pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, dX, true);
-    //E0 = Ep + Ek;
-    //if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
-    //fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", 0, Ek + Ep, Ek, Ep, dX, error);
-    //RenderOnce();
+
+    //DCDByPoint(); // 用于重新计算 Ec
+    //pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, Ec, Nc, dX);
+    //E0 = Ep + Ek + Ec;
+    //if (g_stepCnt < 200) error = (Ek + Ep + Ec - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
+    //fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f,%f,%f\n", 0, Ek + Ep + Ec, Ek, Ep, Ec, Nc, dX, error);
+    // RenderOnce();
 
     float omega = 1.0f;
-    for (int i = 0; i < m_iterNum; i++) {
+    int i;
+    for (i = 0; i < m_iterNum; i++) {
         pdSolverData->runClearTemp();
         DCDByPoint();
-        //DCDByTriangle();
+        // DCDByTriangle();
         pdSolverData->runCalculateIF(m_volumnStiffness);
         omega = 4 / (4 - m_rho * m_rho * omega);
         pdSolverData->runcalculatePOS(omega, m_dt);
-        
-        //pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, dX, true);
-        //if (g_stepCnt < 200) error = (Ek + Ep - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
-        //fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f\n", i + 1, Ek + Ep, Ek, Ep, dX, error);
-        //RenderOnce();
+
+        //pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, Ec, Nc, dX, i == m_iterNum - 1);
+        //if (g_stepCnt < 200) error = (Ek + Ep + Ec - g_conEnergy_V2) / (E0 - g_conEnergy_V2);
+        //fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f,%f,%f\n", i + 1, Ek + Ep + Ec, Ek, Ep, Ec, Nc, dX, error);
+        // RenderOnce();
     }
     pdSolverData->runCalculateV(m_dt);
 
@@ -251,7 +255,6 @@ void PDSolver::Step() {
     duration_physical = duration.count();
     fprintf(timeOutputFile, "%d,%f\n", g_stepCnt, duration_physical);
 
-    pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, dX, true);
     pdSolverData->runUpdateOutsideTetVertNormal();
     RenderOnce();
 }
