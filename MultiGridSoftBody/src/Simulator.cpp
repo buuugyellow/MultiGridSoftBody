@@ -25,7 +25,7 @@ void Simulator::Init() {
     // 模型初始化
     string name = config_objName;
     string objFile = config_dataDir + name + ".obj";
-    string tetFile = config_dataDir + name;
+    string tetFile = config_dataDir + name + ".msh";
     string tetFaceFile = config_tempDir + name + ".obj";
     m_softObject = new SoftObject(name, objFile, tetFile, tetFaceFile);
     m_softObject->ReadFromFile();
@@ -36,13 +36,18 @@ void Simulator::Init() {
     // 粗网格初始化
     string name_coarse = config_objName_coarse;
     string objFile_coarse = config_dataDir + name_coarse + ".obj";
-    string tetFile_coarse = config_dataDir + name_coarse;
+    string tetFile_coarse = config_dataDir + name_coarse + ".msh";
     string tetFaceFile_coarse = config_tempDir + name_coarse + ".obj";
     m_softObject_coarse = new SoftObject(name_coarse, objFile_coarse, tetFile_coarse, tetFaceFile_coarse);
     m_softObject_coarse->ReadFromFile();
     LOG(INFO) << "coarse ReadFromFile 结束";
     m_softObject_coarse->TetFaceExtraction();
     LOG(INFO) << "coarse TetFaceExtraction 结束";
+
+    // 设置固定球
+    m_sphereFixers.push_back(shared_ptr<SphereFixer>(new SphereFixer({-4, 4.7f, -3}, 1)));
+    m_sphereFixers.push_back(shared_ptr<SphereFixer>(new SphereFixer({-4, 4.7f, 3}, 1)));
+    m_sphereFixers.push_back(shared_ptr<SphereFixer>(new SphereFixer({7.5f, 4.2f, 2}, 1)));
 
     // 碰撞体初始化
     m_sphereColliders.push_back(shared_ptr<SphereCollider>(new SphereCollider({-5, 0, 0}, 1)));

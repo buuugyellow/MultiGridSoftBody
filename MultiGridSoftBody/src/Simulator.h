@@ -20,6 +20,9 @@ public:
     vector<unsigned int> m_tetFaceIdx;  // 用于控制渲染的三角形索引
     vector<float> m_normal;             // 所有四面体顶点都分配法向量，如果有需要可以用于碰撞检测
 
+    // 固定球
+    vector<shared_ptr<SphereFixer>> m_sphereFixers;  // 球内的顶点固定住
+
     // 碰撞检测
     vector<shared_ptr<SphereCollider>> m_sphereColliders;
     vector<shared_ptr<CapsuleCollider>> m_capsuleColliders;

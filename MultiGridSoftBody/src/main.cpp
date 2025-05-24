@@ -190,6 +190,13 @@ void initRenderSyn() {
         sphere->m_renderObjId = g_render->CreatePBRObj("sphere_" + to_string(i), 0, 1, 0, 1, 1);
     }
 
+    for (int i = 0; i < g_simulator->m_sphereFixers.size(); i++) {
+        auto sphere = g_simulator->m_sphereFixers[i];
+        sphere->m_renderObjId = g_render->CreatePBRObj("fixSphere_" + to_string(i), 1, 1, 0, 1, 1);
+        g_render->UpdateMesh(sphere->m_renderObjId, sphere->m_triIdx.size(), sphere->m_triIdx.size() * sizeof(unsigned int), sphere->m_triIdx.data(),
+                             sphere->m_vertNum * 9 * sizeof(float), sphere->m_vert9float.data());
+    }
+
     g_simulator->m_triMoveObjId = g_render->CreatePBRObj("moveTri", 0.6, 0.5, 0.4, 0.2, 0.3);
 }
 
@@ -296,7 +303,7 @@ void renderOnce() {
 void init() {
     config_dataDir = "../data/";
     config_tempDir = "../temp/";
-    config_objName = "Y_12_120_12";  // 单一物体
+    config_objName = "liver/liver18k_106k";  // 单一物体
     config_objName_coarse = "Y_4_40_4";
     g_synOrAsy = true;
     g_solverType = PD;
