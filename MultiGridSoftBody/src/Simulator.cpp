@@ -123,20 +123,20 @@ void Simulator::Update() {
     g_totalDuration = (chrono::duration_cast<chrono::microseconds>(begin_time - last_time)).count();
     last_time = begin_time;
 
-    if (g_stepCnt > 80) {
-        if (timeOutputFile) {
-            fclose(timeOutputFile);
-            timeOutputFile = nullptr;
-        }
-        if (energyOutputFile) {
-            fclose(energyOutputFile);
-            energyOutputFile = nullptr;
-        }
-        renderOnce();
-        return;
-    }
-    g_stepCnt++;
-    cout << "step frame " << g_stepCnt << endl;
+    //if (g_stepCnt > 80) {
+    //    if (timeOutputFile) {
+    //        fclose(timeOutputFile);
+    //        timeOutputFile = nullptr;
+    //    }
+    //    if (energyOutputFile) {
+    //        fclose(energyOutputFile);
+    //        energyOutputFile = nullptr;
+    //    }
+    //    renderOnce();
+    //    return;
+    //}
+    //g_stepCnt++;
+    //cout << "step frame " << g_stepCnt << endl;
 
     UpdateCollider();
     switch (g_solverType) {

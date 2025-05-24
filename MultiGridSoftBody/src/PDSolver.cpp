@@ -132,12 +132,31 @@ void PDSolver::InitVolumeConstraint() {
 
 void PDSolver::SetFixedVert() {
     m_tetVertFixed.resize(m_tetVertNum, 1.0f);
+
+    // 固定 y = 10 的点
+    //for (int i = 0; i < m_tetVertNum; i++) {
+    //    float x = m_tetVertPos[i * 3 + 0];
+    //    float y = m_tetVertPos[i * 3 + 1];
+    //    float z = m_tetVertPos[i * 3 + 2];
+    //    if (fabs(y - 10) < 1e-5) m_tetVertFixed[i] = 0.0f;
+    //}
+
+    // 按照固定球来固定
     for (int i = 0; i < m_tetVertNum; i++) {
         float x = m_tetVertPos[i * 3 + 0];
         float y = m_tetVertPos[i * 3 + 1];
         float z = m_tetVertPos[i * 3 + 2];
-        // if (fabs(z - 10) < 1e-5) m_tetVertFixed[i] = 0.0f;
-        if (fabs(y - 10) < 1e-5) m_tetVertFixed[i] = 0.0f;
+
+        Point3D p = {x, y, z};
+        for (auto sphere : g_simulator->m_sphereFixers) {
+            Point3D center = sphere->m_position;
+            float radius = sphere->m_radius;
+            float dis = length(p - center);
+            if (dis < radius) {
+                m_tetVertFixed[i] = 0.0f;
+                break;
+            }
+        }
     }
 }
 
@@ -151,8 +170,8 @@ void PDSolver::Init(const vector<float> tetVertPos, const vector<int>& tetIdx, c
     m_collisionStiffness = 1000.0f;
     m_rho = 0.9992f;
     m_gravityX = 0.0f;
-    //m_gravityY = -9.8f;
-    m_gravityY = 0.0f;
+    m_gravityY = -9.8f;
+    //m_gravityY = 0.0f;
     m_gravityZ = 0.0f;
 
     m_tetIndex = tetIdx;
@@ -175,6 +194,8 @@ void PDSolver::Init(const vector<float> tetVertPos, const vector<int>& tetIdx, c
                        m_tetVertMass.data(), m_tetVertFixed.data(), m_tetVertPos.data(), m_outsideTriNum, m_outsideTriIndex.data(), m_outsideTetVertNum,
                        m_outsideTetVertIds.data(), m_outsideTriOppositeVertId.data());
     LOG(INFO) << "pdSolverData Init 结束";
+
+
 }
 
 void PDSolver::StepForConvergence() {
