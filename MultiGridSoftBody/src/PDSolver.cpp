@@ -165,8 +165,8 @@ void PDSolver::Init(const vector<float> tetVertPos, const vector<int>& tetIdx, c
     m_iterNum = 128;
     m_iterNumCvg = 128;
     m_dt = 1.0f / 30.0f;
-    m_damping = 0.5f;
-    m_volumnStiffness = 1000.0f;
+    m_damping = 0.95f;
+    m_volumnStiffness = 8000.0f;
     m_collisionStiffness = 1000.0f;
     m_rho = 0.9992f;
     m_gravityX = 0.0f;
@@ -221,7 +221,7 @@ void PDSolver::StepForConvergence() {
 
 void PDSolver::RenderOnce() {
     pdSolverData->runCpyTetVertForRender();
-    renderOnce();
+    /*renderOnce();*/
 }
 
 void PDSolver::DCDByPoint() {
@@ -271,12 +271,11 @@ void PDSolver::Step() {
         // RenderOnce();
     }
     pdSolverData->runCalculateV(m_dt);
+    pdSolverData->runUpdateOutsideTetVertNormal();
+    pdSolverData->runCpyTetVertForRender();
 
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     duration_physical = duration.count();
     fprintf(timeOutputFile, "%d,%f\n", g_stepCnt, duration_physical);
-
-    pdSolverData->runUpdateOutsideTetVertNormal();
-    RenderOnce();
 }

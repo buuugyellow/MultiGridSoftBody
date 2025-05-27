@@ -11,11 +11,12 @@
 using namespace std;
 class Simulator {
 public:
+    enum SolverType { PD, PD_MG };
     SoftObject* m_softObject;
     SoftObject* m_softObject_coarse;
     PDSolver* m_solver;
     PDSolver_MG* m_solver_mg;
-
+    SolverType m_solverType;
     vector<float> m_tetVertPos;         // 这里需要复制一份顶点数据是用于与解算器解耦
     vector<unsigned int> m_tetFaceIdx;  // 用于控制渲染的三角形索引
     vector<float> m_normal;             // 所有四面体顶点都分配法向量，如果有需要可以用于碰撞检测
@@ -38,7 +39,7 @@ public:
     vector<float> m_triMoveVec;         // 三角形排出向量
 
     static Simulator& GetInstance();  // 获取单例对象
-    void Init();                      // 初始化
+    void Init(SolverType solverType);  // 初始化
     void Update();                    // 更新
     void UpdateCollider();            // 更新碰撞体
 

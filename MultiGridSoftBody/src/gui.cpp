@@ -9,11 +9,12 @@
 using namespace std;
 
 bool g_UIShowMesh = true;
-bool g_UIWireframe = false;
 bool g_UIShowParticle = true;
 bool g_UIEnergeOrCllisioin = true;
 float g_UIParticleR = 0.05f;
 int g_key = 0;
+
+bool l_UIWireframe = false;
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     g_key = key;
@@ -45,16 +46,26 @@ void doUI() {
     ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.0f, 1.0f));
     
-    ImGui::Text("duration_total: %.2fms", g_totalDuration / 1000);
-    ImGui::Text("duration_real: %.2fms", g_realDuration / 1000);
-    ImGui::Text("duration_phy: %.2fms", duration_physical / 1000);
+    ImGui::Text("TetVertCnt: %d", g_simulator->m_tetVertPos.size() / 3);
+    ImGui::Text("DurationFixed: %.2fms", g_totalDuration / 1000);
+    ImGui::Text("DurationReal: %.2fms", g_realDuration / 1000);
+    ImGui::Text("DurationPhy: %.2fms", duration_physical / 1000);
+
+    if (g_simulator->m_solverType == Simulator::PD) {
+        ImGui::SliderInt("IterCnt", &g_simulator->m_solver->m_iterNum, 4, 128);
+        ImGui::SliderFloat("VolumnStiffness", &g_simulator->m_solver->m_volumnStiffness, 1000, 10000);
+        ImGui::SliderFloat("CollisionStiffness", &g_simulator->m_solver->m_collisionStiffness, 1000, 10000);
+        ImGui::SliderFloat("Damping", &g_simulator->m_solver->m_damping, 0.1f, 1.0f);
+    } else if (g_simulator->m_solverType == Simulator::PD_MG) {
+    
+    }
 
     ImGui::Checkbox("Mesh", &g_UIShowMesh);
-    if (g_UIShowMesh) ImGui::Checkbox("Wireframe", &g_UIWireframe);
+    if (g_UIShowMesh) ImGui::Checkbox("Wireframe", &l_UIWireframe);
 
     ImGui::Checkbox("Particle", &g_UIShowParticle);
     if (g_UIShowParticle) {
-        ImGui::SliderFloat(u8"Particle Radius", &g_UIParticleR, 0.05, 0.10);
+        ImGui::SliderFloat("ParticleRadius", &g_UIParticleR, 0.05, 0.10);
         ImGui::Checkbox("EnergyOrCollision", &g_UIEnergeOrCllisioin);
         ImGui::Text("CollidedVertCnt: %d", g_collidedVertCnt);
     }
@@ -66,5 +77,5 @@ void doUI() {
     g_render->SetShowPartical(g_UIShowParticle);
     g_render->SetParticalRadius(g_UIParticleR);
     g_render->SetActive(g_simulator->m_softObject->m_renderObjId, g_UIShowMesh);
-    g_render->SetWireframe(g_simulator->m_softObject->m_renderObjId, g_UIWireframe);
+    g_render->SetWireframe(g_simulator->m_softObject->m_renderObjId, l_UIWireframe);
 }

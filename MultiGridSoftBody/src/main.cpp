@@ -36,7 +36,6 @@ float g_conEnergy_V2;           // 每次迭代都先跑一次收敛 step，记�
 float g_conEk_V2;
 float g_conEp_V2;
 
-SolverType g_solverType;
 bool g_synOrAsy;
 
 Application* g_render;
@@ -305,8 +304,6 @@ void init() {
     config_tempDir = "../temp/";
     config_objName = "liver/liver18k_106k";  // 单一物体
     config_objName_coarse = "Y_4_40_4";
-    g_synOrAsy = true;
-    g_solverType = PD;
     FLAGS_log_dir = config_tempDir + "log/";
     config_timeOutputCsv = config_tempDir + "time.csv";
     config_energyOutputCsv = config_tempDir + "energy.csv";
@@ -316,12 +313,13 @@ void init() {
     config_writeOrReadEnergy = false;
     FLAGS_logtostderr = true;
     FLAGS_stderrthreshold = 0;
+    g_synOrAsy = true;
     google::InitGoogleLogging("MultiGridSoftBody");
 
     fileIO();
     initCuda();
     g_simulator = &Simulator::GetInstance();
-    g_simulator->Init();
+    g_simulator->Init(Simulator::PD);
     g_pointsNormalsUVForRender.resize(g_simulator->m_tetVertPos.size() * 3);
     g_pointsForRender.resize(g_simulator->m_tetVertPos.size());
     g_normalsForRender.resize(g_simulator->m_tetVertPos.size());

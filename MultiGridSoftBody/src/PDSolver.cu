@@ -297,7 +297,7 @@ __global__ void DCDByPoint_sphere(Point3D center, float radius, float collisionS
 
     float distance = length(cp);
     float oldRadius = radius;
-    //radius *= 1.5f;
+    radius *= 1.5f;
     if (distance < radius) {
         // (cp + t * dir)^2 = r^2
         float a = 1;
@@ -305,18 +305,18 @@ __global__ void DCDByPoint_sphere(Point3D center, float radius, float collisionS
         float c = dotProduct(cp, cp) - radius * radius;
         float t = (-b + sqrt(b * b - 4 * a * c)) / (2 * a);
 
-        //if (t > 0.5f * oldRadius) {
-        //    isCollied[threadid] = 1;
-        //    collisionDepth[threadid] = t - 0.5f * oldRadius;
-        //}
-        //t = t / 30.0f;
+        if (t > 0.5f * oldRadius) {
+            isCollied[threadid] = 1;
+            collisionDepth[threadid] = t - 0.5f * oldRadius;
+        }
+        t = t / 2.0f;
         Point3D colP = p + dir * t;
         Point3D centerColP = colP - center;
         Point3D colN = centerColP / length(centerColP);
         float colNDotDir = dotProduct(colN, dir);
 
-        isCollied[threadid] = 1;
-        collisionDepth[threadid] = t;
+        //isCollied[threadid] = 1;
+        //collisionDepth[threadid] = t;
 
         // 约束能量是 k * ((p - colP).dot(colN))^2
         collisionDiag[xId] += collisionStiffness * colN.x * colN.x;

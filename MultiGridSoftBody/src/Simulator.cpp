@@ -21,7 +21,8 @@ Simulator& Simulator::GetInstance() {
     return instance;
 }
 
-void Simulator::Init() {
+void Simulator::Init(SolverType solverType) {
+    m_solverType = solverType;
     // 模型初始化
     string name = config_objName;
     string objFile = config_dataDir + name + ".obj";
@@ -69,7 +70,7 @@ void Simulator::Init() {
     m_triMoveVec.resize(m_tetFaceIdx.size());
 
     // 解算器初始化
-    switch (g_solverType) {
+    switch (m_solverType) {
         case PD:
             m_solver = new PDSolver();
             m_solver->Init(m_softObject->m_tetVertPosORIG, m_softObject->m_tetIdxORIG, m_softObject->m_tetFaceIdx, m_softObject->m_tetFaceOppositeTetVertIdx);
@@ -81,14 +82,14 @@ void Simulator::Init() {
                               m_softObject->m_tetFaceIdx, m_softObject->m_tetFaceOppositeTetVertIdx);
             break;
     }
-    LOG(INFO) << "solver: " << g_solverType << " Init 结束";
+    LOG(INFO) << "solver: " << m_solverType << " Init 结束";
 }
 
 void Simulator::UpdateCollider() {
-    for (auto sphere : m_sphereColliders) {
-        sphere->Update(Point3D(0.1f, 0, 0));
-    }
-    return;
+    //for (auto sphere : m_sphereColliders) {
+    //    sphere->Update(Point3D(0.1f, 0, 0));
+    //}
+    //return;
 
     float delta = 0.05f;
     if (!m_sphereColliders.empty()) {
@@ -139,7 +140,7 @@ void Simulator::Update() {
     //cout << "step frame " << g_stepCnt << endl;
 
     UpdateCollider();
-    switch (g_solverType) {
+    switch (m_solverType) {
         case PD:
             m_solver->Step();
             break;
@@ -147,6 +148,7 @@ void Simulator::Update() {
             m_solver_mg->Step();
             break;
     }
+    renderOnce();
 
     auto end_time = chrono::high_resolution_clock::now();
     g_realDuration = (chrono::duration_cast<chrono::microseconds>(end_time - begin_time)).count();
