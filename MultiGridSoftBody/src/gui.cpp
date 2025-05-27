@@ -46,7 +46,8 @@ void doUI() {
     ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 0.0f, 1.0f));
     
-    ImGui::Text("TetVertCnt: %d", g_simulator->m_tetVertPos.size() / 3);
+    ImGui::Text("TetVertCnt: %d", g_simulator->m_solver->m_tetVertNum);
+    ImGui::Text("TetCnt: %d", g_simulator->m_solver->m_tetNum);
     ImGui::Text("DurationFixed: %.2fms", g_totalDuration / 1000);
     ImGui::Text("DurationReal: %.2fms", g_realDuration / 1000);
     ImGui::Text("DurationPhy: %.2fms", duration_physical / 1000);
