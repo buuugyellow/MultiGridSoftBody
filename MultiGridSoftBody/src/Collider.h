@@ -15,7 +15,8 @@ struct SphereCollider {
     vector<unsigned int> m_triIdx;
 
     SphereCollider(Point3D pos, float radius);
-    void Update(Point3D deltaPos);
+    void MoveDelta(Point3D deltaPos);
+    void MoveTo(Point3D targetPos);
 };
 
 struct CapsuleCollider {

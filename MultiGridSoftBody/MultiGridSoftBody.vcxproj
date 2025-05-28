@@ -172,7 +172,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\3rd\glfw\lib-vc2022;..\3rd\assimp\lib;..\3rd\glog\lib;..\x64\Debug;$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\3rd\glfw\lib-vc2022;..\3rd\assimp\lib;..\3rd\glog\lib;..\x64\Release;$(CUDA_PATH)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>glfw3dll.lib;assimp-vc143-mt.lib;Render.lib;glogd.lib;cuda.lib;cudadevrt.lib;cudart.lib;cudart_static.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <CudaCompile>

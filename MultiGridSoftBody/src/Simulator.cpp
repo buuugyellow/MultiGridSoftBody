@@ -87,7 +87,7 @@ void Simulator::Init(SolverType solverType) {
 
 void Simulator::UpdateCollider() {
     //for (auto sphere : m_sphereColliders) {
-    //    sphere->Update(Point3D(0.1f, 0, 0));
+    //    sphere->MoveDelta(Point3D(0.1f, 0, 0));
     //}
     //return;
 
@@ -96,22 +96,22 @@ void Simulator::UpdateCollider() {
         auto sphere = m_sphereColliders[0];
         switch (g_key) {
             case GLFW_KEY_W:
-                sphere->Update(Point3D(0, 0, -delta));
+                sphere->MoveDelta(Point3D(0, 0, -delta));
                 break;
             case GLFW_KEY_S:
-                sphere->Update(Point3D(0, 0, delta));
+                sphere->MoveDelta(Point3D(0, 0, delta));
                 break;
             case GLFW_KEY_A:
-                sphere->Update(Point3D(-delta, 0, 0));
+                sphere->MoveDelta(Point3D(-delta, 0, 0));
                 break;
             case GLFW_KEY_D:
-                sphere->Update(Point3D(delta, 0, 0));
+                sphere->MoveDelta(Point3D(delta, 0, 0));
                 break;
             case GLFW_KEY_Q:
-                sphere->Update(Point3D(0, delta, 0));
+                sphere->MoveDelta(Point3D(0, delta, 0));
                 break;
             case GLFW_KEY_Z:
-                sphere->Update(Point3D(0, -delta, 0));
+                sphere->MoveDelta(Point3D(0, -delta, 0));
                 break;
         }
     }
