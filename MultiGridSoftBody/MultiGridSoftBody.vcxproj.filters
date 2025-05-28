@@ -19,6 +19,9 @@
     <Filter Include="碰撞体">
       <UniqueIdentifier>{9df5ee32-5e6f-4325-bfea-4269b7ffa448}</UniqueIdentifier>
     </Filter>
+    <Filter Include="力反馈">
+      <UniqueIdentifier>{56ea487d-29cb-4157-8388-3111afdc72c6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\gui.cpp">
@@ -66,6 +69,9 @@
     <ClCompile Include="src\Collider.cpp">
       <Filter>碰撞体</Filter>
     </ClCompile>
+    <ClCompile Include="src\Haptic.cpp">
+      <Filter>力反馈</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\SoftObject.h">
@@ -112,6 +118,9 @@
     </ClInclude>
     <ClInclude Include="src\simpleMath.h">
       <Filter>全局类</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Haptic.h">
+      <Filter>力反馈</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

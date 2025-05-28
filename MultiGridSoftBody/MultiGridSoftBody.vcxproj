@@ -29,6 +29,7 @@
     <ClCompile Include="src\Collider.cpp" />
     <ClCompile Include="src\global.h" />
     <ClCompile Include="src\gui.cpp" />
+    <ClCompile Include="src\Haptic.cpp" />
     <ClCompile Include="src\PDSolver.cpp" />
     <ClCompile Include="src\PDSolver_MG.cpp" />
     <ClCompile Include="src\Simulator.cpp" />
@@ -46,6 +47,7 @@
     <ClInclude Include="..\3rd\imgui\imstb_textedit.h" />
     <ClInclude Include="..\3rd\imgui\imstb_truetype.h" />
     <ClInclude Include="src\Collider.h" />
+    <ClInclude Include="src\Haptic.h" />
     <ClInclude Include="src\PDSolver.h" />
     <ClInclude Include="src\PDSolver_MG.h" />
     <ClInclude Include="src\simpleMath.h" />

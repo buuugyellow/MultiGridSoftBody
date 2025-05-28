@@ -6,6 +6,7 @@
 #include <string>
 #include <thread>
 
+#include "Haptic.h"
 #include "Simulator.h"
 #include "application.hpp"
 #include "global.h"
@@ -329,6 +330,9 @@ void init() {
 
 int main() {
     init();
+    //HapticFeeliUSB haptic;
+    //haptic.Init("549Phantom");
+
     if (g_synOrAsy) {  // 同步
         initRenderSyn();
         while (true) g_simulator->Update();
