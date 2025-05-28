@@ -51,7 +51,7 @@ void Simulator::Init(SolverType solverType) {
     m_sphereFixers.push_back(shared_ptr<SphereFixer>(new SphereFixer({7.5f, 4.2f, 2}, 1)));
 
     // 碰撞体初始化
-    m_sphereColliders.push_back(shared_ptr<SphereCollider>(new SphereCollider({-5, 0, 0}, 1)));
+    m_sphereColliders.push_back(shared_ptr<SphereCollider>(new SphereCollider({-5, 0, 0}, 0.5f)));
 
     // 中间变量初始化
     m_tetVertPos = m_softObject->m_tetVertPosORIG;
@@ -91,31 +91,35 @@ void Simulator::UpdateCollider() {
     //}
     //return;
 
-    float delta = 0.05f;
-    if (!m_sphereColliders.empty()) {
-        auto sphere = m_sphereColliders[0];
-        switch (g_key) {
-            case GLFW_KEY_W:
-                sphere->MoveDelta(Point3D(0, 0, -delta));
-                break;
-            case GLFW_KEY_S:
-                sphere->MoveDelta(Point3D(0, 0, delta));
-                break;
-            case GLFW_KEY_A:
-                sphere->MoveDelta(Point3D(-delta, 0, 0));
-                break;
-            case GLFW_KEY_D:
-                sphere->MoveDelta(Point3D(delta, 0, 0));
-                break;
-            case GLFW_KEY_Q:
-                sphere->MoveDelta(Point3D(0, delta, 0));
-                break;
-            case GLFW_KEY_Z:
-                sphere->MoveDelta(Point3D(0, -delta, 0));
-                break;
-        }
-    }
-    g_key = 0;
+    //float delta = 0.05f;
+    //if (!m_sphereColliders.empty()) {
+    //    auto sphere = m_sphereColliders[0];
+    //    switch (g_key) {
+    //        case GLFW_KEY_W:
+    //            sphere->MoveDelta(Point3D(0, 0, -delta));
+    //            break;
+    //        case GLFW_KEY_S:
+    //            sphere->MoveDelta(Point3D(0, 0, delta));
+    //            break;
+    //        case GLFW_KEY_A:
+    //            sphere->MoveDelta(Point3D(-delta, 0, 0));
+    //            break;
+    //        case GLFW_KEY_D:
+    //            sphere->MoveDelta(Point3D(delta, 0, 0));
+    //            break;
+    //        case GLFW_KEY_Q:
+    //            sphere->MoveDelta(Point3D(0, delta, 0));
+    //            break;
+    //        case GLFW_KEY_Z:
+    //            sphere->MoveDelta(Point3D(0, -delta, 0));
+    //            break;
+    //    }
+    //}
+    //g_key = 0;
+
+    auto sphere = m_sphereColliders[0];
+    Point3D targetPos = {haptic.m_buffer[12], haptic.m_buffer[13], haptic.m_buffer[14]};
+    sphere->MoveTo(targetPos);
 }
 
 void Simulator::Update() {

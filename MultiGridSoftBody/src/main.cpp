@@ -328,10 +328,11 @@ void init() {
     LOG(INFO) << "init 结束";
 }
 
+HapticFeeliUSB haptic;
 int main() {
     init();
-    //HapticFeeliUSB haptic;
-    //haptic.Init("549Phantom");
+    
+    haptic.Init("549Phantom");
 
     if (g_synOrAsy) {  // 同步
         initRenderSyn();

@@ -1,6 +1,7 @@
 #pragma once
 //#define PRINT_CUDA_ERROR
 #include <string>
+#include "Haptic.h"
 #include "simpleMath.h"
 #include "Simulator.h"
 #include "application.hpp"
@@ -37,6 +38,8 @@ extern int g_key;
 extern double g_realDuration;
 extern double g_totalDuration;
 extern int g_collidedVertCnt;
+
+extern HapticFeeliUSB haptic;
 
 void doUI();
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
