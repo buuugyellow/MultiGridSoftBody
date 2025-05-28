@@ -152,6 +152,6 @@ void Simulator::Update() {
 
     auto end_time = chrono::high_resolution_clock::now();
     g_realDuration = (chrono::duration_cast<chrono::microseconds>(end_time - begin_time)).count();
-    auto target_time = begin_time + chrono::microseconds(33333);
+    auto target_time = begin_time + chrono::microseconds(int(1000000 * m_solver->m_dt));
     while (chrono::high_resolution_clock::now() < target_time) {}
 }

@@ -162,9 +162,9 @@ void PDSolver::SetFixedVert() {
 
 void PDSolver::Init(const vector<float> tetVertPos, const vector<int>& tetIdx, const vector<unsigned int>& tetFaceIdx,
                     vector<unsigned int> tetFaceOppositeTetVertIdx) {
-    m_iterNum = 128;
+    m_iterNum = 32;
     m_iterNumCvg = 128;
-    m_dt = 1.0f / 30.0f;
+    m_dt = 1.0f / 60.0f;
     m_damping = 0.95f;
     m_volumnStiffness = 8000.0f;
     m_collisionStiffness = 1000.0f;
