@@ -55,6 +55,7 @@
     <ClInclude Include="src\SoftObject.h" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="src\PDSolverAc.cu" />
     <CudaCompile Include="src\utils.cu" />
     <CudaCompile Include="src\PDSolver.cu">
       <FileType>Document</FileType>
@@ -179,6 +180,8 @@
     </Link>
     <CudaCompile>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+      <AdditionalCompilerOptions>
+      </AdditionalCompilerOptions>
     </CudaCompile>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

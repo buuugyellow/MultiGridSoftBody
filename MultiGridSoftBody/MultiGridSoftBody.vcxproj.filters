@@ -130,5 +130,8 @@
     <CudaCompile Include="src\utils.cu">
       <Filter>全局类</Filter>
     </CudaCompile>
+    <CudaCompile Include="src\PDSolverAc.cu">
+      <Filter>解算器</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

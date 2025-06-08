@@ -6,16 +6,6 @@
 #include "Simulator.h"
 #include "global.h"
 
-#ifdef PRINT_CUDA_ERROR
-#define PRINT_CUDA_ERROR_AFTER(func) \
-    do {                             \
-        cudaDeviceSynchronize();     \
-        printCudaError(func);        \
-    } while (0)
-#else
-#define PRINT_CUDA_ERROR_AFTER(func)
-#endif  // PRINT_CUDA_ERROR
-
 void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
                         float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h, int outsideTriNum_h, unsigned int* outsideTriIndex_h,
                         int outsideTetVertNum_h, unsigned int* outsideTetVertIds_h, unsigned int* outsideTriOppositeVertIds_h) {
@@ -73,6 +63,8 @@ void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* 
     cudaMemset(tetVertCollisionDepth_d, 0, tetVertNum * sizeof(float));
     cudaMalloc((void**)&tetVertCollisionEnergy_d, tetVertNum * sizeof(float));
     cudaMemset(tetVertCollisionEnergy_d, 0, tetVertNum * sizeof(float));
+    cudaMalloc((void**)&tetDG_d, tetNum * 9 * sizeof(float));
+
     PRINT_CUDA_ERROR_AFTER("Init");
 }
 

@@ -1,5 +1,15 @@
 #pragma once
 //#define PRINT_CUDA_ERROR
+#ifdef PRINT_CUDA_ERROR
+#define PRINT_CUDA_ERROR_AFTER(func) \
+    do {                             \
+        cudaDeviceSynchronize();     \
+        printCudaError(func);        \
+    } while (0)
+#else
+#define PRINT_CUDA_ERROR_AFTER(func)
+#endif  // PRINT_CUDA_ERROR
+
 #include <string>
 #include "simpleMath.h"
 #include "Simulator.h"
