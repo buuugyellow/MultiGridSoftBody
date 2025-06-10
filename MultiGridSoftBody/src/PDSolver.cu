@@ -64,6 +64,7 @@ void PDSolverData::Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* 
     cudaMalloc((void**)&tetVertCollisionEnergy_d, tetVertNum * sizeof(float));
     cudaMemset(tetVertCollisionEnergy_d, 0, tetVertNum * sizeof(float));
     cudaMalloc((void**)&tetDG_d, tetNum * 9 * sizeof(float));
+    cudaMalloc((void**)&tetFR_d, tetNum * 9 * sizeof(float));
 
     PRINT_CUDA_ERROR_AFTER("Init");
 }

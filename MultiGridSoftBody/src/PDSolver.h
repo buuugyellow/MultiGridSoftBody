@@ -39,6 +39,7 @@ struct PDSolverData {
     float* tetVertCollisionDiag_d;              // 碰撞能量的 Hessian 阵的对角阵（向量存储）
     float* tetVertCollisionForce_d;             // 碰撞能量的一阶导向量
     float* tetDG_d;                              // 四面体形变梯度，3*3，F = [x01, x02, x03][X01, X02, X03]^-1
+    float* tetFR_d;                              // 四面体 F-R
 
     void Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
               float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h, int outsideTriNum_h, unsigned int* outsideTriIndex_h, int outsideTetVertNum_h,

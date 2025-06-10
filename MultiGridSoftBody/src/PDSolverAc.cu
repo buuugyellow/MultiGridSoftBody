@@ -303,11 +303,55 @@ __global__ void calculateTetIF(int tetNum, int* m_tetIndex, float* tetDG, float*
     atomicAdd(force + vIndex3 * 3 + 2, temp[11] * tetVolumn[threadid] * m_volumnStiffness);
 }
 
+__global__ void getTetFR(int tetNum, float* tetDG, float* tetFR) {
+    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (threadid >= tetNum) return;
+    float R[9];
+    GetRotation((float(*)[3]) & tetDG[threadid * 9], (float(*)[3])R);  // 转化为数组指针，即对应二维数组的形参要求
+    MatrixSubstract_3_D(R, &tetDG[threadid * 9], R);
+    memcpy(tetFR + threadid * 9, R, 9 * sizeof(float));
+}
+
+__global__ void calTetIF(int tetNum, float* tetFR, float* m_tetInvD3x4, int* m_tetIndex, float* force, float* tetVolumn, float m_volumnStiffness) {
+    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (threadid >= tetNum) return;
+
+    float temp[12] = {0};
+    MatrixProduct_D(tetFR + threadid * 9, &m_tetInvD3x4[threadid * 12], temp, 3, 3, 4);
+    for (int i = 0; i < 12; i++) {
+        if (isnan(temp[i])) temp[i] = 0;
+        temp[i] = temp[i] > 10 ? 10 : temp[i];
+        temp[i] = temp[i] < -10 ? -10 : temp[i];
+    }
+
+    // 对应的四个点的xyz分量
+    // 这里应该需要原子操作
+    int vIndex0 = m_tetIndex[threadid * 4 + 0];
+    int vIndex1 = m_tetIndex[threadid * 4 + 1];
+    int vIndex2 = m_tetIndex[threadid * 4 + 2];
+    int vIndex3 = m_tetIndex[threadid * 4 + 3];
+    atomicAdd(force + vIndex0 * 3 + 0, temp[0] * tetVolumn[threadid] * m_volumnStiffness);
+    atomicAdd(force + vIndex0 * 3 + 1, temp[4] * tetVolumn[threadid] * m_volumnStiffness);
+    atomicAdd(force + vIndex0 * 3 + 2, temp[8] * tetVolumn[threadid] * m_volumnStiffness);
+    atomicAdd(force + vIndex1 * 3 + 0, temp[1] * tetVolumn[threadid] * m_volumnStiffness);
+    atomicAdd(force + vIndex1 * 3 + 1, temp[5] * tetVolumn[threadid] * m_volumnStiffness);
+    atomicAdd(force + vIndex1 * 3 + 2, temp[9] * tetVolumn[threadid] * m_volumnStiffness);
+    atomicAdd(force + vIndex2 * 3 + 0, temp[2] * tetVolumn[threadid] * m_volumnStiffness);
+    atomicAdd(force + vIndex2 * 3 + 1, temp[6] * tetVolumn[threadid] * m_volumnStiffness);
+    atomicAdd(force + vIndex2 * 3 + 2, temp[10] * tetVolumn[threadid] * m_volumnStiffness);
+    atomicAdd(force + vIndex3 * 3 + 0, temp[3] * tetVolumn[threadid] * m_volumnStiffness);
+    atomicAdd(force + vIndex3 * 3 + 1, temp[7] * tetVolumn[threadid] * m_volumnStiffness);
+    atomicAdd(force + vIndex3 * 3 + 2, temp[11] * tetVolumn[threadid] * m_volumnStiffness);
+}
+
 void PDSolverData::runCalculateIFAc(float m_volumnStiffness) {
     int threadNum = 512;
     int blockNum = (tetNum + threadNum - 1) / threadNum;
     calculateTetDG_Test<<<(tetNum * 9 + threadNum - 1) / threadNum, threadNum>>>(tetVertPos_d, tetIndex_d, tetInvD3x3_d, tetDG_d, tetNum);
     //calculateTetDG<<<blockNum, threadNum>>>(tetVertPos_d, tetIndex_d, tetInvD3x3_d, tetDG_d, tetNum);
-    calculateTetIF<<<blockNum, threadNum>>>(tetNum, tetIndex_d, tetDG_d, tetInvD3x4_d, tetVertForce_d, tetVolume_d, m_volumnStiffness);
+    //calculateTetIF<<<blockNum, threadNum>>>(tetNum, tetIndex_d, tetDG_d, tetInvD3x4_d, tetVertForce_d, tetVolume_d, m_volumnStiffness);
+    getTetFR<<<blockNum, threadNum>>>(tetNum, tetDG_d, tetFR_d);
+    calTetIF<<<blockNum, threadNum>>>(tetNum, tetFR_d, tetInvD3x4_d, tetIndex_d, tetVertForce_d, tetVolume_d, m_volumnStiffness);
+    
     PRINT_CUDA_ERROR_AFTER("runCalculateIFAc");
 }
