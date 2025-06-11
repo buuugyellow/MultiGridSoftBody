@@ -7,7 +7,7 @@
 #include "global.h"
 
 __global__ void calculateIFBase(float* positions, int* m_tetIndex, float* m_tetInvD3x3, float* m_tetInvD3x4, float* force, float* tetVolumn, int tetNum,
-                              float m_volumnStiffness) {
+                                float m_volumnStiffness) {
     unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
     if (threadid >= tetNum) return;
 
@@ -136,13 +136,13 @@ __global__ void calculateTetDG_Test(float* positions, int* m_tetIndex, float* m_
     float inv1 = m_tetInvD3x3[tetId * 9 + threadid % 3 + 3];
     float inv2 = m_tetInvD3x3[tetId * 9 + threadid % 3 + 6];
 
-    // 0: 0 3 6 9 
-    // 1: 0 3 6 9 
-    // 2: 0 3 6 9 
+    // 0: 0 3 6 9
+    // 1: 0 3 6 9
+    // 2: 0 3 6 9
     // 3: 1 4 7 10
     // 4: 1 4 7 10
     // 5: 1 4 7 10
-    // 6: 2 5 8 11 
+    // 6: 2 5 8 11
     // 7: 2 5 8 11
     // 8: 2 5 8 11
     int vIndex0 = m_tetIndex[tetId * 4 + 0];
@@ -303,16 +303,128 @@ __global__ void calculateTetIF(int tetNum, int* m_tetIndex, float* tetDG, float*
     atomicAdd(force + vIndex3 * 3 + 2, temp[11] * tetVolumn[threadid] * m_volumnStiffness);
 }
 
-__global__ void getTetFR(int tetNum, float* tetDG, float* tetFR) {
+// 基准版本，使用本地内存
+__global__ void getTetFRBase(int tetNum, float* tetDG, float* tetFR) {
     unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
     if (threadid >= tetNum) return;
+
     float R[9];
     GetRotation((float(*)[3]) & tetDG[threadid * 9], (float(*)[3])R);  // 转化为数组指针，即对应二维数组的形参要求
     MatrixSubstract_3_D(R, &tetDG[threadid * 9], R);
     memcpy(tetFR + threadid * 9, R, 9 * sizeof(float));
 }
 
-__global__ void calTetIF(int tetNum, float* tetFR, float* m_tetInvD3x4, int* m_tetIndex, float* force, float* tetVolumn, float m_volumnStiffness) {
+// 使用寄存器的版本
+__global__ void getTetFRV1(int tetNum, float* tetDG, float* tetFR) {
+    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (threadid >= tetNum * 9) return;
+
+    int tetId = threadid / 9;
+    int i = (threadid % 9) / 3;
+    int j = (threadid % 9) % 3;
+    float F00 = tetDG[tetId * 9 + 0];
+    float F01 = tetDG[tetId * 9 + 1];
+    float F02 = tetDG[tetId * 9 + 2];
+    float F10 = tetDG[tetId * 9 + 3];
+    float F11 = tetDG[tetId * 9 + 4];
+    float F12 = tetDG[tetId * 9 + 5];
+    float F20 = tetDG[tetId * 9 + 6];
+    float F21 = tetDG[tetId * 9 + 7];
+    float F22 = tetDG[tetId * 9 + 8];
+    float F0j = tetDG[tetId * 9 + 0 + j];  // 想要按照索引去取值，但是不能用数组，用这个中间寄存器保存
+    float F1j = tetDG[tetId * 9 + 3 + j];
+    float F2j = tetDG[tetId * 9 + 6 + j];
+    float Fi0 = tetDG[tetId * 9 + i * 3 + 0];
+    float Fi1 = tetDG[tetId * 9 + i * 3 + 1];
+    float Fi2 = tetDG[tetId * 9 + i * 3 + 2];
+    float Fij = tetDG[tetId * 9 + i * 3 + j];
+    float det = F00 * F11 * F22 + F01 * F12 * F20 + F10 * F21 * F02 - F02 * F11 * F20 - F01 * F10 * F22 - F00 * F12 * F21;
+    float III_c = det * det;
+
+    float C00 = F00 * F00 + F10 * F10 + F20 * F20;
+    float C01 = F00 * F01 + F10 * F11 + F20 * F21;
+    float C02 = F00 * F02 + F10 * F12 + F20 * F22;
+    float C10 = F01 * F00 + F11 * F10 + F21 * F20;
+    float C11 = F01 * F01 + F11 * F11 + F21 * F21;
+    float C12 = F01 * F02 + F11 * F12 + F21 * F22;
+    float C20 = F02 * F00 + F12 * F10 + F22 * F20;
+    float C21 = F02 * F01 + F12 * F11 + F22 * F21;
+    float C22 = F02 * F02 + F12 * F12 + F22 * F22;
+    float I_c = C00 + C11 + C22;
+    float I_c2 = I_c * I_c;
+    float C0j = F00 * F0j + F10 * F1j + F20 * F2j;
+    float C1j = F01 * F0j + F11 * F1j + F21 * F2j;
+    float C2j = F02 * F0j + F12 * F1j + F22 * F2j;
+
+    float CC00 = C00 * C00 + C01 * C01 + C02 * C02;
+    float CC01 = C00 * C10 + C01 * C11 + C02 * C12;
+    float CC02 = C00 * C20 + C01 * C21 + C02 * C22;
+    float CC10 = C10 * C00 + C11 * C01 + C12 * C02;
+    float CC11 = C10 * C10 + C11 * C11 + C12 * C12;
+    float CC12 = C10 * C20 + C11 * C21 + C12 * C22;
+    float CC20 = C20 * C00 + C21 * C01 + C22 * C02;
+    float CC21 = C20 * C10 + C21 * C11 + C22 * C12;
+    float CC22 = C20 * C20 + C21 * C21 + C22 * C22;
+    float II_c = 0.5 * (I_c2 - CC00 - CC11 - CC22);
+    float k = I_c2 - 3 * II_c;  // k 是一个平方和，大于等于 0
+
+    // float CC0j = C00 * Cj0 + C01 * Cj1 + C02 * Cj2;
+    // float CC1j = C10 * Cj0 + C11 * Cj1 + C12 * Cj2;
+    // float CC1j = C20 * Cj0 + C21 * Cj1 + C22 * Cj2;
+    // 因为 C = (F^T)F 是对称阵，因此 Cj0 = C0j
+    float CC0j = C00 * C0j + C01 * C1j + C02 * C2j;
+    float CC1j = C10 * C0j + C11 * C1j + C12 * C2j;
+    float CC2j = C20 * C0j + C21 * C1j + C22 * C2j;
+
+    if (k < 1e-6f) {
+        if (I_c < 1e-6) printf("[ERROR]I_c = %f, 四面体退化成一个点\n", I_c);  // I_c == 0 <=> F = {0}
+        float temp = 1 / sqrt(I_c / 3);
+        tetFR[threadid] = Fij * temp - Fij;
+        return;
+    }
+
+    float l = I_c * (I_c * I_c - 4.5f * II_c) + 13.5f * III_c;
+    float k_root = sqrt(k);
+    float value = l / (k * k_root);
+    value = max(1.0f, min(-1.0f, value));
+    float phi = acos(value);
+    float lambda2 = (I_c + 2 * k_root * cos(phi / 3)) / 3.0;  // phi in [0, pi], phi/3 in [0, pi/3], cos > 0
+    float lambda = sqrt(lambda2);
+    float III_u = det;
+    if (fabs(lambda) < 1e-6) printf("[ERROR]lambada = %f, 应该是大于 0 的？\n", lambda);
+    if (-lambda2 + I_c + 2 * III_u / lambda < 1e-6)
+        printf("[ERROR] -lambda2 + I_c + 2 * III_u / lambda = %f (det = %f)\n", -lambda2 + I_c + 2 * III_u / lambda, det);
+    float I_u = lambda + sqrt(-lambda2 + I_c + 2 * III_u / lambda);
+    float II_u = (I_u * I_u - I_c) * 0.5;
+    if (fabs(I_u * II_u - III_u) < 1e-6) printf("[ERROR]I_u * II_u - III_u = %f\n", I_u * II_u - III_u);
+    float inv_rate = 1 / (I_u * II_u - III_u);
+    float factor = I_u * III_u * inv_rate;
+
+
+    float temp = factor;
+    factor = (I_u * I_u - II_u) * inv_rate;
+    float U0j = factor * C0j - inv_rate * CC0j;
+    float U1j = factor * C1j - inv_rate * CC1j;
+    float U2j = factor * C2j - inv_rate * CC2j;
+    if (j == 0) U0j += temp; // 这三个分支需要合并
+    if (j == 1) U1j += temp;
+    if (j == 2) U2j += temp;
+
+    if (fabs(III_u) < 1e-6) printf("[ERROR]III_u = %f, det = %f\n", III_u, det);  // 这里是因为四面体退化成一个平面了
+    inv_rate = 1 / III_u;
+    temp = II_u * inv_rate;
+    factor = -I_u * inv_rate;
+    float inv_U0j = factor * U0j + inv_rate * C0j;
+    float inv_U1j = factor * U1j + inv_rate * C1j;
+    float inv_U2j = factor * U2j + inv_rate * C2j;
+    if (j == 0) inv_U0j += temp;  // 这三个分支需要合并
+    if (j == 1) inv_U1j += temp;
+    if (j == 2) inv_U2j += temp;
+
+    tetFR[threadid] = Fi0 * inv_U0j + Fi1 * inv_U1j + Fi2 * inv_U2j - Fij;
+}
+
+__global__ void calTetIFBase(int tetNum, float* tetFR, float* m_tetInvD3x4, int* m_tetIndex, float* force, float* tetVolumn, float m_volumnStiffness) {
     unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
     if (threadid >= tetNum) return;
 
@@ -345,13 +457,13 @@ __global__ void calTetIF(int tetNum, float* tetFR, float* m_tetInvD3x4, int* m_t
 }
 
 void PDSolverData::runCalculateIFAc(float m_volumnStiffness) {
-    int threadNum = 512;
-    int blockNum = (tetNum + threadNum - 1) / threadNum;
-    calculateTetDG_Test<<<(tetNum * 9 + threadNum - 1) / threadNum, threadNum>>>(tetVertPos_d, tetIndex_d, tetInvD3x3_d, tetDG_d, tetNum);
-    //calculateTetDG<<<blockNum, threadNum>>>(tetVertPos_d, tetIndex_d, tetInvD3x3_d, tetDG_d, tetNum);
-    //calculateTetIF<<<blockNum, threadNum>>>(tetNum, tetIndex_d, tetDG_d, tetInvD3x4_d, tetVertForce_d, tetVolume_d, m_volumnStiffness);
-    getTetFR<<<blockNum, threadNum>>>(tetNum, tetDG_d, tetFR_d);
-    calTetIF<<<blockNum, threadNum>>>(tetNum, tetFR_d, tetInvD3x4_d, tetIndex_d, tetVertForce_d, tetVolume_d, m_volumnStiffness);
-    
+    // calculateTetDG<<<BLOCK_SIZE(tetNum, 512), 512>>>(tetVertPos_d, tetIndex_d, tetInvD3x3_d, tetDG_d, tetNum);
+    calculateTetDG_Test<<<BLOCK_SIZE(tetNum * 9, 512), 512>>>(tetVertPos_d, tetIndex_d, tetInvD3x3_d, tetDG_d, tetNum);
+
+    // calculateTetIF<<<BLOCK_SIZE(tetNum, 512), 512>>>(tetNum, tetIndex_d, tetDG_d, tetInvD3x4_d, tetVertForce_d, tetVolume_d, m_volumnStiffness);
+    //getTetFRBase<<<BLOCK_SIZE(tetNum, 512), 512>>>(tetNum, tetDG_d, tetFR_d);
+    getTetFRV1<<<BLOCK_SIZE(tetNum * 9, 512), 512>>>(tetNum, tetDG_d, tetFR_d);
+    calTetIFBase<<<BLOCK_SIZE(tetNum, 512), 512>>>(tetNum, tetFR_d, tetInvD3x4_d, tetIndex_d, tetVertForce_d, tetVolume_d, m_volumnStiffness);
+
     PRINT_CUDA_ERROR_AFTER("runCalculateIFAc");
 }

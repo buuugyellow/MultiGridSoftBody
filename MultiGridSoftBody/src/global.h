@@ -10,6 +10,8 @@
 #define PRINT_CUDA_ERROR_AFTER(func)
 #endif  // PRINT_CUDA_ERROR
 
+#define BLOCK_SIZE(eleNum, threadNum) (((eleNum) + (threadNum) - 1) / (threadNum))
+
 #include <string>
 #include "simpleMath.h"
 #include "Simulator.h"
