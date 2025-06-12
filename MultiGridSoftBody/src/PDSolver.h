@@ -49,6 +49,7 @@ struct PDSolverData {
     void runCalculateIF(float m_volumnStiffness);
     void runCalculateIFAc(float m_volumnStiffness);
     void runcalculatePOS(float omega, float m_dt);
+    void runcalculatePOSAc(float omega, float m_dt);
     void runCalculateV(float m_dt);
     void runCpyTetVertForRender();
     void runResetPosVel();

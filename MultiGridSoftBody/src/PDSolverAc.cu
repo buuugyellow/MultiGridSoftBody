@@ -400,13 +400,12 @@ __global__ void getTetFRV1(int tetNum, float* tetDG, float* tetFR) {
     float inv_rate = 1 / (I_u * II_u - III_u);
     float factor = I_u * III_u * inv_rate;
 
-
     float temp = factor;
     factor = (I_u * I_u - II_u) * inv_rate;
     float U0j = factor * C0j - inv_rate * CC0j;
     float U1j = factor * C1j - inv_rate * CC1j;
     float U2j = factor * C2j - inv_rate * CC2j;
-    if (j == 0) U0j += temp; // 这三个分支需要合并
+    if (j == 0) U0j += temp;  // 这三个分支需要合并
     if (j == 1) U1j += temp;
     if (j == 2) U2j += temp;
 
@@ -456,14 +455,85 @@ __global__ void calTetIFBase(int tetNum, float* tetFR, float* m_tetInvD3x4, int*
     atomicAdd(force + vIndex3 * 3 + 2, temp[11] * tetVolumn[threadid] * m_volumnStiffness);
 }
 
+__global__ void calTetIFV1(int tetNum, int* tetIndex, float* tetFR, float* tetInvD3x4, float* tetVolumn, float volumnStiffness, float* force) {
+    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (threadid >= tetNum * 12) return;
+
+    int tetId = threadid / 12;
+    int i = (threadid % 12) / 4;
+    int j = (threadid % 12) % 4;
+
+    int vertId = tetIndex[tetId * 4 + j];
+    int forceId = vertId * 3 + i;
+
+    float volumn = tetVolumn[tetId];
+
+    float FRi0 = tetFR[tetId * 9 + i * 3 + 0];
+    float FRi1 = tetFR[tetId * 9 + i * 3 + 1];
+    float FRi2 = tetFR[tetId * 9 + i * 3 + 2];
+
+    float inv0j = tetInvD3x4[tetId * 12 + 0 * 4 + j];
+    float inv1j = tetInvD3x4[tetId * 12 + 1 * 4 + j];
+    float inv2j = tetInvD3x4[tetId * 12 + 2 * 4 + j];
+
+    float temp = FRi0 * inv0j + FRi1 * inv1j + FRi2 * inv2j;
+
+    // if (isnan(temp)) temp[i] = 0;
+    temp = min(10.0f, max(-10.0f, temp));
+    float result = temp * volumn * volumnStiffness;
+
+    atomicAdd(force + forceId, result);
+}
+
 void PDSolverData::runCalculateIFAc(float m_volumnStiffness) {
     // calculateTetDG<<<BLOCK_SIZE(tetNum, 512), 512>>>(tetVertPos_d, tetIndex_d, tetInvD3x3_d, tetDG_d, tetNum);
     calculateTetDG_Test<<<BLOCK_SIZE(tetNum * 9, 512), 512>>>(tetVertPos_d, tetIndex_d, tetInvD3x3_d, tetDG_d, tetNum);
 
     // calculateTetIF<<<BLOCK_SIZE(tetNum, 512), 512>>>(tetNum, tetIndex_d, tetDG_d, tetInvD3x4_d, tetVertForce_d, tetVolume_d, m_volumnStiffness);
-    //getTetFRBase<<<BLOCK_SIZE(tetNum, 512), 512>>>(tetNum, tetDG_d, tetFR_d);
+    // getTetFRBase<<<BLOCK_SIZE(tetNum, 512), 512>>>(tetNum, tetDG_d, tetFR_d);
     getTetFRV1<<<BLOCK_SIZE(tetNum * 9, 512), 512>>>(tetNum, tetDG_d, tetFR_d);
-    calTetIFBase<<<BLOCK_SIZE(tetNum, 512), 512>>>(tetNum, tetFR_d, tetInvD3x4_d, tetIndex_d, tetVertForce_d, tetVolume_d, m_volumnStiffness);
-
+    // calTetIFBase<<<BLOCK_SIZE(tetNum, 512), 512>>>(tetNum, tetFR_d, tetInvD3x4_d, tetIndex_d, tetVertForce_d, tetVolume_d, m_volumnStiffness);
+    calTetIFV1<<<BLOCK_SIZE(tetNum * 12, 512), 512>>>(tetNum, tetIndex_d, tetFR_d, tetInvD3x4_d, tetVolume_d, m_volumnStiffness, tetVertForce_d);
     PRINT_CUDA_ERROR_AFTER("runCalculateIFAc");
+}
+
+__global__ void calculatePOSV1(float* positions, float* fixed, float* mass, float* next_positions, float* prev_positions, float* old_positions,
+                               float* volumnDiag, float* force, float* collisionDiag, float* collisionForce, int vertexNum, float m_dt, float omega) {
+    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (threadid >= vertexNum * 3) return;
+
+    int vertId = threadid / 3;
+    int index = vertId * 3 + threadid % 3;
+
+    float fixflag = fixed[vertId];
+    float m = mass[vertId];
+    float f = force[index];
+    float colF = collisionForce[index];
+    float oldPos = old_positions[index];
+    float prevPos = prev_positions[index];
+    float pos = positions[index];
+    float vDiag = volumnDiag[vertId];
+    float colDiag = collisionDiag[index];
+
+    float diagConstant = m / (m_dt * m_dt);
+    float element = f + colF;
+
+    float next = (diagConstant * (oldPos - pos) + element) / (vDiag + colDiag + diagConstant) * fixflag + pos;
+
+    // under-relaxation 和 切比雪夫迭代
+    next = (next - pos) * 0.6 + pos;
+
+    // omega定义：omega = 4 / (4 - rho*rho*omega);
+    next = omega * (next - prevPos) + prevPos;
+
+    next_positions[index] = next;
+    prev_positions[index] = pos;
+    positions[index] = next;
+}
+
+void PDSolverData::runcalculatePOSAc(float omega, float m_dt) {
+    calculatePOSV1<<<BLOCK_SIZE(tetVertNum * 3, 512), 512>>>(tetVertPos_d, tetVertFixed_d, tetVertMass_d, tetVertPos_next_d, tetVertPos_prev_d,
+                                                             tetVertPos_old_d, tetVolumeDiag_d, tetVertForce_d, tetVertCollisionDiag_d, tetVertCollisionForce_d,
+                                                             tetVertNum, m_dt, omega);
+    PRINT_CUDA_ERROR_AFTER("runCalculatePOS");
 }
