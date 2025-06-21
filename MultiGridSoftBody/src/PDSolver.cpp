@@ -2,11 +2,60 @@
 
 #include <chrono>
 #include <iostream>
+#include <unordered_map>
 
 #include "global.h"
 
 using namespace std;
 double duration_physical = 0;
+
+void PDSolver::InitTet2VertMap() {
+    int tetNum = m_tetNum;
+    int tetVertNum = m_tetVertNum;
+    vector<int>& tetIndex = m_tetIndex;
+
+    unordered_map<int, int> vert2TetCntMap;
+    for (int vertId = 0; vertId < tetVertNum; vertId++) {
+        vert2TetCntMap[vertId] = 0;
+    }
+
+    int maxTetCnt = 0;
+    int maxVertId = -1;
+    vector<int> offsetVec(tetNum * 4);
+    for (int tetId = 0; tetId < tetNum; ++tetId) {
+        for (int i = 0; i < 4; i++) {
+            int vertId = tetIndex[tetId * 4 + i];
+            int offset = vert2TetCntMap[vertId];
+            vert2TetCntMap[vertId]++;
+            offsetVec[tetId * 4 + i] = offset;
+            maxVertId = (vert2TetCntMap[vertId] > maxTetCnt) ? vertId : maxVertId;
+            maxTetCnt = max(maxTetCnt, vert2TetCntMap[vertId]);
+        }
+    }
+
+    cout << "max TetNum one vert has: vert = " << maxVertId << ", cnt = " << maxTetCnt << endl; // liver18k_106k 44¸ö
+    int stride = maxTetCnt;
+
+    vector<int> indexMap(tetNum * 12);
+    for (int tetId = 0; tetId < tetNum; ++tetId) {
+        for (int i = 0; i < 4; i++) {
+            int vertId = tetIndex[tetId * 4 + i];
+            //indexMap[tetId * 4 + i] = vertId * stride + offsetVec[tetId * 4 + i];
+            //indexMap[tetId * 4 + i] = offsetVec[tetId * 4 + i] * tetVertNum + vertId;
+
+            //indexMap[tetId * 12 + 0 + i] = (offsetVec[tetId * 4 + i] * 3 + 0) * tetVertNum + vertId;
+            //indexMap[tetId * 12 + 4 + i] = (offsetVec[tetId * 4 + i] * 3 + 1) * tetVertNum + vertId;
+            //indexMap[tetId * 12 + 8 + i] = (offsetVec[tetId * 4 + i] * 3 + 2) * tetVertNum + vertId;
+
+            indexMap[tetId * 12 + 0 + i] = offsetVec[tetId * 4 + i] * tetVertNum * 3 + vertId * 3 + 0;
+            indexMap[tetId * 12 + 4 + i] = offsetVec[tetId * 4 + i] * tetVertNum * 3 + vertId * 3 + 0;
+            indexMap[tetId * 12 + 8 + i] = offsetVec[tetId * 4 + i] * tetVertNum * 3 + vertId * 3 + 0;
+        }
+    }
+
+    m_tempForceStride = stride;
+    m_tempForceMap = indexMap;
+}
 
 void PDSolver::InitVolumeConstraint() {
     m_tetVertMass.resize(m_tetVertNum);
@@ -162,7 +211,7 @@ void PDSolver::SetFixedVert() {
 
 void PDSolver::Init(const vector<float> tetVertPos, const vector<int>& tetIdx, const vector<unsigned int>& tetFaceIdx,
                     vector<unsigned int> tetFaceOppositeTetVertIdx) {
-    m_iterNum = 20;
+    m_iterNum = 40;
     m_iterNumCvg = 128;
     m_dt = 1.0f / 60.0f;
     m_damping = 0.95f;
@@ -185,6 +234,7 @@ void PDSolver::Init(const vector<float> tetVertPos, const vector<int>& tetIdx, c
     m_tetNum = m_tetIndex.size() / 4;
     m_tetVertNum = m_tetVertPos.size() / 3;
 
+    InitTet2VertMap();
     InitVolumeConstraint();
     LOG(INFO) << "InitVolumeConstraint ½áÊø";
 
@@ -192,7 +242,7 @@ void PDSolver::Init(const vector<float> tetVertPos, const vector<int>& tetIdx, c
     pdSolverData = new PDSolverData();
     pdSolverData->Init(m_tetNum, m_tetVertNum, m_tetIndex.data(), m_tetInvD3x3.data(), m_tetInvD3x4.data(), m_tetVolume.data(), m_tetVolumeDiag.data(),
                        m_tetVertMass.data(), m_tetVertFixed.data(), m_tetVertPos.data(), m_outsideTriNum, m_outsideTriIndex.data(), m_outsideTetVertNum,
-                       m_outsideTetVertIds.data(), m_outsideTriOppositeVertId.data());
+                       m_outsideTetVertIds.data(), m_outsideTriOppositeVertId.data(), m_tempForceStride, m_tempForceMap.data());
     LOG(INFO) << "pdSolverData Init ½áÊø";
 
 

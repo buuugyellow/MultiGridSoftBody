@@ -485,6 +485,40 @@ __global__ void calTetIFV1(int tetNum, int* tetIndex, float* tetFR, float* tetIn
     atomicAdd(force + forceId, result);
 }
 
+__global__ void calTetIFV2(int tetNum, int* tetIndex, float* tetFR, float* tetInvD3x4, float* tetVolumn, float volumnStiffness, int* tempForceMap, float* tempForce) {
+    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (threadid >= tetNum * 12) return;
+    tempForce[threadid] = threadid;  // 单纯写的上限 10us 还是挺快的，瓶颈在读？
+    return;
+
+    int tetId = threadid / 12;
+    int i = (threadid % 12) / 4;
+    int j = (threadid % 12) % 4;
+
+    int vertId = tetIndex[tetId * 4 + j];
+    int forceId = vertId * 3 + i;
+
+    float volumn = tetVolumn[tetId];
+
+    float FRi0 = tetFR[tetId * 9 + i * 3 + 0];
+    float FRi1 = tetFR[tetId * 9 + i * 3 + 1];
+    float FRi2 = tetFR[tetId * 9 + i * 3 + 2];
+
+    float inv0j = tetInvD3x4[tetId * 12 + 0 * 4 + j];
+    float inv1j = tetInvD3x4[tetId * 12 + 1 * 4 + j];
+    float inv2j = tetInvD3x4[tetId * 12 + 2 * 4 + j];
+
+    float temp = FRi0 * inv0j + FRi1 * inv1j + FRi2 * inv2j;
+
+    // if (isnan(temp)) temp[i] = 0;
+    temp = min(10.0f, max(-10.0f, temp));
+    float result = temp * volumn * volumnStiffness;
+
+    //atomicAdd(force + forceId, result);
+    int tempForceId = tempForceMap[threadid];
+    tempForce[threadid] = result + tempForceId; // 上限，顺序写
+}
+
 void PDSolverData::runCalculateIFAc(float m_volumnStiffness) {
     // calculateTetDG<<<BLOCK_SIZE(tetNum, 512), 512>>>(tetVertPos_d, tetIndex_d, tetInvD3x3_d, tetDG_d, tetNum);
     calculateTetDG_Test<<<BLOCK_SIZE(tetNum * 9, 512), 512>>>(tetVertPos_d, tetIndex_d, tetInvD3x3_d, tetDG_d, tetNum);
@@ -494,6 +528,7 @@ void PDSolverData::runCalculateIFAc(float m_volumnStiffness) {
     getTetFRV1<<<BLOCK_SIZE(tetNum * 9, 512), 512>>>(tetNum, tetDG_d, tetFR_d);
     // calTetIFBase<<<BLOCK_SIZE(tetNum, 512), 512>>>(tetNum, tetFR_d, tetInvD3x4_d, tetIndex_d, tetVertForce_d, tetVolume_d, m_volumnStiffness);
     calTetIFV1<<<BLOCK_SIZE(tetNum * 12, 512), 512>>>(tetNum, tetIndex_d, tetFR_d, tetInvD3x4_d, tetVolume_d, m_volumnStiffness, tetVertForce_d);
+    //calTetIFV2<<<BLOCK_SIZE(tetNum * 12, 512), 512>>>(tetNum, tetIndex_d, tetFR_d, tetInvD3x4_d, tetVolume_d, m_volumnStiffness, tempForceMap_d, tempForce_d);
     PRINT_CUDA_ERROR_AFTER("runCalculateIFAc");
 }
 

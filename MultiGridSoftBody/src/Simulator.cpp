@@ -48,7 +48,7 @@ void Simulator::Init(SolverType solverType) {
     // 设置固定球
     m_sphereFixers.push_back(shared_ptr<SphereFixer>(new SphereFixer({-4, 4.7f, -3}, 1)));
     m_sphereFixers.push_back(shared_ptr<SphereFixer>(new SphereFixer({-4, 4.7f, 3}, 1)));
-    m_sphereFixers.push_back(shared_ptr<SphereFixer>(new SphereFixer({7.5f, 4.2f, 2}, 1)));
+    //m_sphereFixers.push_back(shared_ptr<SphereFixer>(new SphereFixer({7.5f, 4.2f, 2}, 1)));
 
     // 碰撞体初始化
     m_sphereColliders.push_back(shared_ptr<SphereCollider>(new SphereCollider({-5, 0, 0}, 1)));

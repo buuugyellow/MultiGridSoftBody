@@ -32,18 +32,20 @@ struct PDSolverData {
     float* tetVertExternForce_d;                // 外力，tetVertNum*3
     float* tetVertForce_d;                      // 顶点受力, tetVertNum*3
     int* tetVertIsCollided_d;                   // 发生碰撞大于 0，否则为 0
-    float* tetVertCollisionDepth_d;               // 顶点碰撞深度，目前用于可视化
+    float* tetVertCollisionDepth_d;             // 顶点碰撞深度，目前用于可视化
     float* tetVertCollisionEnergy_d;            // 顶点碰撞能量，用于数据分析
     int* triIsCollided_d;                       // 三角形是否发生碰撞
     float* triColProjectVector_d;               // 三角形碰撞排出的向量
     float* tetVertCollisionDiag_d;              // 碰撞能量的 Hessian 阵的对角阵（向量存储）
     float* tetVertCollisionForce_d;             // 碰撞能量的一阶导向量
-    float* tetDG_d;                              // 四面体形变梯度，3*3，F = [x01, x02, x03][X01, X02, X03]^-1
-    float* tetFR_d;                              // 四面体 F-R
+    float* tetDG_d;                             // 四面体形变梯度，3*3，F = [x01, x02, x03][X01, X02, X03]^-1
+    float* tetFR_d;                             // 四面体 F-R
+    int* tempForceMap_d;                        // 四面体内顶点映射到暂存顶点体积力的索引
+    float* tempForce_d;
 
     void Init(int tetNum_h, int tetVertNum_h, int* tetIndex_h, float* tetInvD3x3_h, float* tetInvD3x4_h, float* tetVolume_h, float* tetVolumeDiag_h,
               float* tetVertMass_h, float* tetVertFixed_h, float* tetVertPos_h, int outsideTriNum_h, unsigned int* outsideTriIndex_h, int outsideTetVertNum_h,
-              unsigned int* outsideTetVertIds_h, unsigned int* outsideTriOppositeVertIds_h);
+              unsigned int* outsideTetVertIds_h, unsigned int* outsideTriOppositeVertIds_h, int tempForceStride_h, int* tempForceMap_h);
     void runCalculateST(float m_damping, float m_dt, float m_gravityX, float m_gravityY, float m_gravityZ);
     void runClearTemp();
     void runCalculateIF(float m_volumnStiffness);
@@ -56,7 +58,8 @@ struct PDSolverData {
     void runSaveVel();
     void runTestConvergence(int iter);
     void runCalEnergy(float m_dt, const vector<float>& m_tetVertMass, const vector<int>& m_tetIndex, const vector<float>& m_tetInvD3x3,
-                      const vector<float>& m_tetVolume, float m_volumnStiffness, float& Ek, float& Ep, float& Ec, float& Nc, float& dX, bool calEveryVertEp = false);
+                      const vector<float>& m_tetVolume, float m_volumnStiffness, float& Ek, float& Ep, float& Ec, float& Nc, float& dX,
+                      bool calEveryVertEp = false);
     void runClearCollision();
     void runDCDByPoint_sphere(Point3D center, float radius, float collisionStiffness);
     void runUpdateTriNormal();
@@ -82,6 +85,7 @@ public:
     int m_tetVertNum;
     int m_outsideTriNum;
     int m_outsideTetVertNum;
+    int m_tempForceStride;     // 用于暂存每个四面体给四面体顶点的体积力的
     vector<int> m_tetIndex;
     vector<unsigned int> m_outsideTriIndex;           // 三角形索引 [(v0,v2,v4), (v4,v6,v8)...]
     vector<unsigned int> m_outsideTriOppositeVertId;  // 表面三角形对应的四面体顶点索引
@@ -96,11 +100,14 @@ public:
     vector<float> m_tetFaceNormal;  // 这个是每个四面体的四个面的法向量，面的顺序和 m_tetIndex 中对应点的顺序一致
     vector<float> m_tetFaceArea;    // 每个四面体的四个面的面积，顺序同上
     vector<float> m_tetCenter;      // 四面体重心坐标
+    vector<int> m_tempForceMap;     // 四面体到暂存体积力数组的映射
     PDSolverData* pdSolverData;
 
-    void Init(const vector<float> tetVertPos, const vector<int>& tetIdx, const vector<unsigned int>& tetFaceIdx, vector<unsigned int> tetFaceOppositeTetVertIdx);
+    void Init(const vector<float> tetVertPos, const vector<int>& tetIdx, const vector<unsigned int>& tetFaceIdx,
+              vector<unsigned int> tetFaceOppositeTetVertIdx);
     void Step();
     void StepForConvergence();
+    void InitTet2VertMap();
     void InitVolumeConstraint();
     void SetFixedVert();
     void RenderOnce();
