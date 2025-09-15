@@ -376,8 +376,16 @@ __global__ void getTetFRV1(int tetNum, float* tetDG, float* tetFR) {
     float CC1j = C10 * C0j + C11 * C1j + C12 * C2j;
     float CC2j = C20 * C0j + C21 * C1j + C22 * C2j;
 
+    // 异常处理，设置 R = I
+    float Rij = 0;
+    if (i == j) Rij = 1;
+    tetFR[threadid] = Rij - Fij;
+
     if (k < 1e-6f) {
-        if (I_c < 1e-6) printf("[ERROR]I_c = %f, 四面体退化成一个点\n", I_c);  // I_c == 0 <=> F = {0}
+        if (I_c < 1e-6) {  // I_c == 0 <=> F = {0}
+            printf("[ERROR]I_c = %f, 四面体退化成一个点\n", I_c);
+            return;
+        }
         float temp = 1 / sqrt(I_c / 3);
         tetFR[threadid] = Fij * temp - Fij;
         return;
@@ -391,12 +399,20 @@ __global__ void getTetFRV1(int tetNum, float* tetDG, float* tetFR) {
     float lambda2 = (I_c + 2 * k_root * cos(phi / 3)) / 3.0;  // phi in [0, pi], phi/3 in [0, pi/3], cos > 0
     float lambda = sqrt(lambda2);
     float III_u = det;
-    if (fabs(lambda) < 1e-6) printf("[ERROR]lambada = %f, 应该是大于 0 的？\n", lambda);
-    if (-lambda2 + I_c + 2 * III_u / lambda < 1e-6)
+    if (fabs(lambda) < 1e-6) {
+        printf("[ERROR]lambada = %f, 应该是大于 0 的？\n", lambda);
+        return;
+    }
+    if (-lambda2 + I_c + 2 * III_u / lambda < 1e-6) {
         printf("[ERROR] -lambda2 + I_c + 2 * III_u / lambda = %f (det = %f)\n", -lambda2 + I_c + 2 * III_u / lambda, det);
+        return;
+    }
     float I_u = lambda + sqrt(-lambda2 + I_c + 2 * III_u / lambda);
     float II_u = (I_u * I_u - I_c) * 0.5;
-    if (fabs(I_u * II_u - III_u) < 1e-6) printf("[ERROR]I_u * II_u - III_u = %f\n", I_u * II_u - III_u);
+    if (fabs(I_u * II_u - III_u) < 1e-6) {
+        printf("[ERROR]I_u * II_u - III_u = %f\n", I_u * II_u - III_u);
+        return;
+    }
     float inv_rate = 1 / (I_u * II_u - III_u);
     float factor = I_u * III_u * inv_rate;
 
@@ -409,7 +425,10 @@ __global__ void getTetFRV1(int tetNum, float* tetDG, float* tetFR) {
     if (j == 1) U1j += temp;
     if (j == 2) U2j += temp;
 
-    if (fabs(III_u) < 1e-6) printf("[ERROR]III_u = %f, det = %f\n", III_u, det);  // 这里是因为四面体退化成一个平面了
+    if (fabs(III_u) < 1e-6) {
+        printf("[ERROR]III_u = %f, det = %f\n", III_u, det);  // 这里是因为四面体退化成一个平面了
+        return;
+    }
     inv_rate = 1 / III_u;
     temp = II_u * inv_rate;
     factor = -I_u * inv_rate;
@@ -478,7 +497,10 @@ __global__ void calTetIFV1(int tetNum, int* tetIndex, float* tetFR, float* tetIn
 
     float temp = FRi0 * inv0j + FRi1 * inv1j + FRi2 * inv2j;
 
-    // if (isnan(temp)) temp[i] = 0;
+    if (isnan(temp)) {
+        printf("[ERROR]temp is nan\n");
+        temp = 0;
+    }
     temp = min(10.0f, max(-10.0f, temp));
     float result = temp * volumn * volumnStiffness;
 
