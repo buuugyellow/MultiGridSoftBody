@@ -394,7 +394,7 @@ __global__ void getTetFRV1(int tetNum, float* tetDG, float* tetFR) {
     float l = I_c * (I_c * I_c - 4.5f * II_c) + 13.5f * III_c;
     float k_root = sqrt(k);
     float value = l / (k * k_root);
-    value = max(1.0f, min(-1.0f, value));
+    value = min(1.0f, max(-1.0f, value));
     float phi = acos(value);
     float lambda2 = (I_c + 2 * k_root * cos(phi / 3)) / 3.0;  // phi in [0, pi], phi/3 in [0, pi/3], cos > 0
     float lambda = sqrt(lambda2);
