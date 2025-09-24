@@ -103,7 +103,7 @@ void Application::SetActive(int i, bool active) {
 void Application::SetWireframe(int i, bool wireframe) { m_renderer->m_sceneobject->m_meshes[i]->m_wireframe = wireframe; }
 
 void Application::InitRender(std::string& hdrfile, std::string& shaderfolder, std::string& name, void (*doUICallBack)(),
-                             void (*keyCallback)(GLFWwindow* window, int key, int scancode, int action, int mods)) {
+                             void (*keyCallback)(GLFWwindow* window, int key, int scancode, int action, int mods), ImGuiContext*& imGuiContext) {
 	m_renderer = new Renderer();
 	m_renderer->m_name = name;
 	m_renderer -> doUICallBack = doUICallBack;
@@ -114,6 +114,7 @@ void Application::InitRender(std::string& hdrfile, std::string& shaderfolder, st
 	glfwSetScrollCallback(m_window, Application::mouseScrollCallback);
 	glfwSetKeyCallback(m_window, keyCallback);
 	ImguiHelper::Instance()->init(m_window);
+    imGuiContext = ImGui::GetCurrentContext();
 	m_renderer->m_sceneobject->m_hdrfile = hdrfile;
 	m_renderer->m_sceneobject->m_shaderFolder = shaderfolder;
 	m_renderer->m_sceneobject->initialize();

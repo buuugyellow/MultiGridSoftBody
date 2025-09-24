@@ -261,9 +261,9 @@ void PDSolver::Step() {
         pdSolverData->runClearTemp();
         DCDByPoint();
         // DCDByTriangle();
-        pdSolverData->runCalculateIFAc(m_volumnStiffness);
+        pdSolverData->runCalculateIF(m_volumnStiffness);
         omega = 4 / (4 - m_rho * m_rho * omega);
-        pdSolverData->runcalculatePOSAc(omega, m_dt);
+        pdSolverData->runcalculatePOS(omega, m_dt);
 
         //pdSolverData->runCalEnergy(m_dt, m_tetVertMass, m_tetIndex, m_tetInvD3x3, m_tetVolume, m_volumnStiffness, Ek, Ep, Ec, Nc, dX, i == m_iterNum - 1);
         //if (g_stepCnt < 200) error = (Ek + Ep + Ec - g_conEnergy_V2) / (E0 - g_conEnergy_V2);

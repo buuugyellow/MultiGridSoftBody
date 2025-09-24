@@ -43,6 +43,9 @@ Application* g_render;
 Simulator* g_simulator;
 
 mutex mtx;                        // 管理 CPU 上的顶点数据，仿真线程写，渲染线程读
+mutex initMtx;                    // 仿真线程等待渲染线程初始化后执行后续代码
+condition_variable cv;            // 条件变量
+bool isInitialized = false;
 vector<float> g_pointsForRender;  // 仿真线程渲染线程共享的顶点数据，需要传递的包括：顶点坐标 + 法向量 + UV坐标
 vector<float> g_normalsForRender;
 vector<float> g_uvForRender;
@@ -89,11 +92,19 @@ void renderLoop() {
     string shaderFolder = "../shader/";
     string hdrfile = "env1.hdr";
     string name = "MultiGridSoftBody";
-    g_render->InitRender(hdrfile, shaderFolder, name, doUI, keyCallback);
+    ImGuiContext* imGuiContext = nullptr;
+    g_render->InitRender(hdrfile, shaderFolder, name, doUI, keyCallback, imGuiContext);
+    ImGui::SetCurrentContext(imGuiContext);
     // bindRenderObjs(); // 如果这个定义在全局，渲染线程会找不到这个函数
     float ssoaparas[8] = {2.0f, 1.5f, 0.9f, 0.9f, 0.009f, 2.8f};
     g_render->SetSSAOParas(ssoaparas);
     g_simulator->m_softObject->m_renderObjId = g_render->CreatePBRObj(g_simulator->m_softObject->m_name, 0.6, 0.5, 0.4, 0.2, 0.3);
+    {
+        // 获取锁，修改标志位，并通知等待的线程
+        std::lock_guard<std::mutex> lock(initMtx);
+        isInitialized = true;
+    }
+    cv.notify_one();
 
     int ret = 0;
     while (!ret) {
@@ -177,7 +188,8 @@ void initRenderSyn() {
     string shaderFolder = "../shader/";
     string hdrfile = "env1.hdr";
     string name = "MultiGridSoftBody";
-    g_render->InitRender(hdrfile, shaderFolder, name, doUI, keyCallback);
+    ImGuiContext* imGuiContext = nullptr;
+    g_render->InitRender(hdrfile, shaderFolder, name, doUI, keyCallback, imGuiContext);
     ImGuiContext* ctx = g_render->GetImGuiContext();
     ImGui::SetCurrentContext(ctx);
     float ssoaparas[8] = {2.0f, 1.5f, 0.9f, 0.9f, 0.009f, 2.8f};
@@ -338,14 +350,12 @@ int main() {
         while (true) g_simulator->Update();
     } else {  // 异步
         initRenderAsy();
+        {
+            std::unique_lock<std::mutex> lock(initMtx);
+            cv.wait(lock, [] { return isInitialized; });  // 等待条件满足：isInitialized为true
+        }
         while (true) {
             g_simulator->Update();
-            if (mtx.try_lock()) {  // 成功获取锁，此时写顶点数据，否则继续
-                // 在四面体顶点中抽取出表面顶点坐标
-                g_pointsForRender = g_simulator->m_tetVertPos;
-                g_normalsForRender = g_simulator->m_normal;
-                mtx.unlock();
-            }
         }
     }
     return 0;

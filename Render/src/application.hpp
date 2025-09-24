@@ -27,7 +27,7 @@ public:
 
 
 	void InitRender(std::string& hdrfile, std::string& shaderfolder, std::string& name, void (*doUICallBack)(),
-                    void (*keyCallback)(GLFWwindow* window, int key, int scancode, int action, int mods));
+                    void (*keyCallback)(GLFWwindow* window, int key, int scancode, int action, int mods), ImGuiContext*& imGuiContext);
 
 	ImGuiContext* GetImGuiContext();
 

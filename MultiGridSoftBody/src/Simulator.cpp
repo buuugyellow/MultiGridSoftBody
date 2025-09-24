@@ -8,6 +8,7 @@
 #include <set>
 #include <string>
 #include <thread>
+#include <mutex>
 
 using namespace std;
 
@@ -15,6 +16,7 @@ int g_stepCnt = 0;
 double g_realDuration;
 double g_totalDuration;
 int g_collidedVertCnt;
+extern bool g_synOrAsy;
 
 Simulator& Simulator::GetInstance() {
     static Simulator instance;
@@ -118,6 +120,7 @@ void Simulator::UpdateCollider() {
     g_key = 0;
 }
 
+extern mutex mtx;
 void Simulator::Update() {
     static auto last_time = chrono::high_resolution_clock::now();
     auto begin_time = chrono::high_resolution_clock::now();
@@ -148,7 +151,17 @@ void Simulator::Update() {
             m_solver_mg->Step();
             break;
     }
-    renderOnce();
+
+    if (g_synOrAsy) {
+        renderOnce();
+    } else {
+        if (mtx.try_lock()) {  // 成功获取锁，此时写顶点数据，否则继续
+            // 在四面体顶点中抽取出表面顶点坐标
+            g_pointsForRender = g_simulator->m_tetVertPos;
+            g_normalsForRender = g_simulator->m_normal;
+            mtx.unlock();
+        }
+    }
 
     auto end_time = chrono::high_resolution_clock::now();
     g_realDuration = (chrono::duration_cast<chrono::microseconds>(end_time - begin_time)).count();
