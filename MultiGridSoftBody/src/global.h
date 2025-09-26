@@ -47,6 +47,7 @@ extern bool g_UIEnergeOrCllisioin;
 extern float g_UIParticleR;
 extern int g_key;
 extern double g_realDuration;
+extern double g_renderDuration;
 extern double g_totalDuration;
 extern int g_collidedVertCnt;
 

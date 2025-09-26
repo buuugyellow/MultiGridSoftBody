@@ -61,6 +61,11 @@
       <FileType>Document</FileType>
     </CudaCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Render\Render.vcxproj">
+      <Project>{cef9f9c9-9e02-4749-9cb3-6a9fd47751f4}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>

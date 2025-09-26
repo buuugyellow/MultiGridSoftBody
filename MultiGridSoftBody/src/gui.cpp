@@ -9,7 +9,7 @@
 using namespace std;
 
 bool g_UIShowMesh = true;
-bool g_UIShowParticle = true;
+bool g_UIShowParticle = false;
 bool g_UIEnergeOrCllisioin = true;
 float g_UIParticleR = 0.05f;
 int g_key = 0;
@@ -51,6 +51,7 @@ void doUI() {
     ImGui::Text("DurationFixed: %.2fms", g_totalDuration / 1000);
     ImGui::Text("DurationReal: %.2fms", g_realDuration / 1000);
     ImGui::Text("DurationPhy: %.2fms", duration_physical / 1000);
+    ImGui::Text("DurationRender: %.2fms", g_renderDuration / 1000);
 
     if (g_simulator->m_solverType == Simulator::PD) {
         ImGui::SliderInt("IterCnt", &g_simulator->m_solver->m_iterNum, 4, 128);

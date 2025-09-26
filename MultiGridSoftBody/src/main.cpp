@@ -99,6 +99,20 @@ void renderLoop() {
     float ssoaparas[8] = {2.0f, 1.5f, 0.9f, 0.9f, 0.009f, 2.8f};
     g_render->SetSSAOParas(ssoaparas);
     g_simulator->m_softObject->m_renderObjId = g_render->CreatePBRObj(g_simulator->m_softObject->m_name, 0.6, 0.5, 0.4, 0.2, 0.3);
+    for (int i = 0; i < g_simulator->m_sphereColliders.size(); i++) {
+        auto sphere = g_simulator->m_sphereColliders[i];
+        sphere->m_renderObjId = g_render->CreatePBRObj("sphere_" + to_string(i), 0, 1, 0, 1, 1);
+    }
+
+    for (int i = 0; i < g_simulator->m_sphereFixers.size(); i++) {
+        auto sphere = g_simulator->m_sphereFixers[i];
+        sphere->m_renderObjId = g_render->CreatePBRObj("fixSphere_" + to_string(i), 1, 1, 0, 1, 1);
+        g_render->UpdateMesh(sphere->m_renderObjId, sphere->m_triIdx.size(), sphere->m_triIdx.size() * sizeof(unsigned int), sphere->m_triIdx.data(),
+                             sphere->m_vertNum * 9 * sizeof(float), sphere->m_vert9float.data());
+    }
+
+    g_simulator->m_triMoveObjId = g_render->CreatePBRObj("moveTri", 0.6, 0.5, 0.4, 0.2, 0.3);
+
     {
         // 获取锁，修改标志位，并通知等待的线程
         std::lock_guard<std::mutex> lock(initMtx);
@@ -108,6 +122,7 @@ void renderLoop() {
 
     int ret = 0;
     while (!ret) {
+        auto begin_time = chrono::high_resolution_clock::now();
         {
             lock_guard<mutex> lock(mtx);
             for (int i = 0; i < g_pointsNormalsUVForRender.size() / 9; i++) {
@@ -125,7 +140,14 @@ void renderLoop() {
         g_render->UpdateMesh(g_simulator->m_softObject->m_renderObjId, g_simulator->m_tetFaceIdx.size(),
                              g_simulator->m_tetFaceIdx.size() * sizeof(unsigned int), g_simulator->m_tetFaceIdx.data(),
                              g_pointsNormalsUVForRender.size() * sizeof(float), g_pointsNormalsUVForRender.data());
+        // 更新碰撞体
+        for (auto sphere : g_simulator->m_sphereColliders) {
+            g_render->UpdateMesh(sphere->m_renderObjId, sphere->m_triIdx.size(), sphere->m_triIdx.size() * sizeof(unsigned int), sphere->m_triIdx.data(),
+                                 sphere->m_vertNum * 9 * sizeof(float), sphere->m_vert9float.data());
+        }
         ret = g_render->Render();
+        auto end_time = chrono::high_resolution_clock::now();
+        g_renderDuration = (chrono::duration_cast<chrono::microseconds>(end_time - begin_time)).count();
     }
     exit(ret);
 }
@@ -232,16 +254,16 @@ void renderOnce() {
                              sphere->m_vertNum * 9 * sizeof(float), sphere->m_vert9float.data());
     }
 
-    // 记录碰撞信息
-    g_collidedVertCnt = 0;
-    float maxDepth = -FLT_MAX;
-    for (int i = 0; i < vertNum; i++) {
-        int isCollided = g_simulator->m_tetVertIsCollide[i];
-        if (isCollided > 0) g_collidedVertCnt++;
-        float collisionDepth = g_simulator->m_tetVertCollisionDepth[i];
-        maxDepth = max(maxDepth, collisionDepth);
-    }
-    fprintf(collisionInfoFile, "%d,%f\n", g_collidedVertCnt, maxDepth);
+    //// 记录碰撞信息
+    //g_collidedVertCnt = 0;
+    //float maxDepth = -FLT_MAX;
+    //for (int i = 0; i < vertNum; i++) {
+    //    int isCollided = g_simulator->m_tetVertIsCollide[i];
+    //    if (isCollided > 0) g_collidedVertCnt++;
+    //    float collisionDepth = g_simulator->m_tetVertCollisionDepth[i];
+    //    maxDepth = max(maxDepth, collisionDepth);
+    //}
+    //fprintf(collisionInfoFile, "%d,%f\n", g_collidedVertCnt, maxDepth);
 
     // 更新可视化的软体顶点
     if (g_UIShowParticle) {
@@ -326,7 +348,7 @@ void init() {
     config_writeOrReadEnergy = false;
     FLAGS_logtostderr = true;
     FLAGS_stderrthreshold = 0;
-    g_synOrAsy = true;
+    g_synOrAsy = false;
     google::InitGoogleLogging("MultiGridSoftBody");
 
     fileIO();

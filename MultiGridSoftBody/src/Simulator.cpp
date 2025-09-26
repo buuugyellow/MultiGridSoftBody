@@ -14,6 +14,7 @@ using namespace std;
 
 int g_stepCnt = 0;
 double g_realDuration;
+double g_renderDuration;
 double g_totalDuration;
 int g_collidedVertCnt;
 extern bool g_synOrAsy;
@@ -153,7 +154,10 @@ void Simulator::Update() {
     }
 
     if (g_synOrAsy) {
+        auto begin_time = chrono::high_resolution_clock::now();
         renderOnce();
+        auto end_time = chrono::high_resolution_clock::now();
+        g_renderDuration = (chrono::duration_cast<chrono::microseconds>(end_time - begin_time)).count();
     } else {
         if (mtx.try_lock()) {  // 成功获取锁，此时写顶点数据，否则继续
             // 在四面体顶点中抽取出表面顶点坐标
