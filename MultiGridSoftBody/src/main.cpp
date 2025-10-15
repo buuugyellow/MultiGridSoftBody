@@ -348,7 +348,7 @@ void init() {
     config_writeOrReadEnergy = false;
     FLAGS_logtostderr = true;
     FLAGS_stderrthreshold = 0;
-    g_synOrAsy = false;
+    g_synOrAsy = true;
     google::InitGoogleLogging("MultiGridSoftBody");
 
     fileIO();

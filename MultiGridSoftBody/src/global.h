@@ -41,6 +41,7 @@ extern float g_conEk_V2;
 extern float g_conEp_V2;
 
 extern double duration_physical;
+extern double duration_physicalInner;
 extern bool g_UIShowMesh;
 extern bool g_UIShowParticle;
 extern bool g_UIEnergeOrCllisioin;

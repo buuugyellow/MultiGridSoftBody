@@ -7,6 +7,7 @@
 
 using namespace std;
 double duration_physical = 0;
+double duration_physicalInner = 0;
 
 void PDSolver::InitVolumeConstraint() {
     m_tetVertMass.resize(m_tetVertNum);
@@ -255,13 +256,17 @@ void PDSolver::Step() {
     //fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f,%f,%f\n", 0, Ek + Ep + Ec, Ek, Ep, Ec, Nc, dX, error);
     // RenderOnce();
 
+    cudaDeviceSynchronize();
+    auto startInner = std::chrono::high_resolution_clock::now();
     float omega = 1.0f;
     int i;
     for (i = 0; i < m_iterNum; i++) {
         pdSolverData->runClearTemp();
         DCDByPoint();
         // DCDByTriangle();
-        pdSolverData->runCalculateIF(m_volumnStiffness);
+        //pdSolverData->runTestTime();
+        pdSolverData->runCalculateIFAc(m_volumnStiffness);
+        
         omega = 4 / (4 - m_rho * m_rho * omega);
         pdSolverData->runcalculatePOS(omega, m_dt);
 
@@ -270,6 +275,11 @@ void PDSolver::Step() {
         //fprintf(energyOutputFile, "%d,%f,%f,%f,%f,%f,%f,%f\n", i + 1, Ek + Ep + Ec, Ek, Ep, Ec, Nc, dX, error);
         // RenderOnce();
     }
+    cudaDeviceSynchronize();
+    auto endInner = std::chrono::high_resolution_clock::now();
+    auto durationInner = std::chrono::duration_cast<std::chrono::microseconds>(endInner - startInner);
+    duration_physicalInner = durationInner.count();
+
     pdSolverData->runCalculateV(m_dt);
     pdSolverData->runUpdateOutsideTetVertNormal();
     pdSolverData->runCpyTetVertForRender();
