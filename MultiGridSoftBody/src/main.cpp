@@ -20,12 +20,14 @@ string config_dataDir;
 string config_tempDir;
 string config_objName;  // 单一物体
 string config_objName_coarse;
-string config_timeOutputCsv;
+string config_timeOutputCsv_physical;
+string config_timeOutputCsv_render;
 string config_energyOutputCsv;
 string config_energyStepInCsv;
 string config_energyStepOutCsv;
 string config_collisionInfoOutCsv;
-FILE* timeOutputFile;
+FILE* timeOutputFile_physical;
+FILE* timeOutputFile_render;
 FILE* energyOutputFile;
 FILE* energyStepFile;  // 每次 step 结束之后的能量，用于记录收敛状态的能量
 FILE* collisionInfoFile;
@@ -38,6 +40,7 @@ float g_conEk_V2;
 float g_conEp_V2;
 
 bool g_synOrAsy;
+chrono::steady_clock::time_point g_systemBeginTime;
 
 Application* g_render;
 Simulator* g_simulator;
@@ -148,6 +151,8 @@ void renderLoop() {
         ret = g_render->Render();
         auto end_time = chrono::high_resolution_clock::now();
         g_renderDuration = (chrono::duration_cast<chrono::microseconds>(end_time - begin_time)).count();
+        double nowTime = std::chrono::duration_cast<std::chrono::microseconds>(end_time - g_systemBeginTime).count();
+        fprintf(timeOutputFile_render, "%f,%f\n", nowTime / 1000000, g_renderDuration / 1000);
     }
     exit(ret);
 }
@@ -160,11 +165,18 @@ void fileIO() {
         fprintf(energyOutputFile, "iter,Energy,Ek,Ep,Ec,Nc,deltaX,error\n");
     }
 
-    err = fopen_s(&timeOutputFile, config_timeOutputCsv.c_str(), "w+");
+    err = fopen_s(&timeOutputFile_physical, config_timeOutputCsv_physical.c_str(), "w+");
     if (err) {
-        LOG(ERROR) << "打开 csv 文件失败: " << config_timeOutputCsv.c_str();
+        LOG(ERROR) << "打开 csv 文件失败: " << config_timeOutputCsv_physical.c_str();
     } else {
-        fprintf(timeOutputFile, "step,duration\n");
+        fprintf(timeOutputFile_physical, "time(s), duration_physical(ms)\n");
+    }
+
+    err = fopen_s(&timeOutputFile_render, config_timeOutputCsv_render.c_str(), "w+");
+    if (err) {
+        LOG(ERROR) << "打开 csv 文件失败: " << config_timeOutputCsv_render.c_str();
+    } else {
+        fprintf(timeOutputFile_render, "time(s), duration_render(ms)\n");
     }
 
     if (config_writeOrReadEnergy) {
@@ -340,7 +352,8 @@ void init() {
     config_objName = "liver/liver18k_106k";  // 单一物体
     config_objName_coarse = "Y_4_40_4";
     FLAGS_log_dir = config_tempDir + "log/";
-    config_timeOutputCsv = config_tempDir + "time.csv";
+    config_timeOutputCsv_physical = config_tempDir + "time_physical.csv";
+    config_timeOutputCsv_render = config_tempDir + "time_render.csv";
     config_energyOutputCsv = config_tempDir + "energy.csv";
     config_energyStepInCsv = config_dataDir + "120_256iter.csv";
     config_energyStepOutCsv = config_tempDir + "energyStepOut.csv";
@@ -363,6 +376,7 @@ void init() {
 }
 
 int main() {
+    g_systemBeginTime = chrono::high_resolution_clock::now();
     init();
     //HapticFeeliUSB haptic;
     //haptic.Init("549Phantom");

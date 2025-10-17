@@ -245,7 +245,7 @@ void PDSolver_MG::Step() {
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     duration_physical = duration.count();
-    fprintf(timeOutputFile, "%d,%f\n", g_stepCnt, duration_physical);
+    fprintf(timeOutputFile_physical, "%d,%f\n", g_stepCnt, duration_physical);
 
     m_pdSolverFine->pdSolverData->runCalEnergy(m_pdSolverFine->m_dt, m_pdSolverFine->m_tetVertMass, m_pdSolverFine->m_tetIndex, m_pdSolverFine->m_tetInvD3x3,
                                                 m_pdSolverFine->m_tetVolume, m_pdSolverFine->m_volumnStiffness, Ek, Ep, Ec, Nc, dX, true);

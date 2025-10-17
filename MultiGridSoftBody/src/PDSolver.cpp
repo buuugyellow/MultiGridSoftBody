@@ -287,5 +287,7 @@ void PDSolver::Step() {
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
     duration_physical = duration.count();
-    fprintf(timeOutputFile, "%d,%f\n", g_stepCnt, duration_physical);
+
+    double nowTime = std::chrono::duration_cast<std::chrono::microseconds>(end - g_systemBeginTime).count();
+    fprintf(timeOutputFile_physical, "%f,%f\n", nowTime / 1000000, duration_physical / 1000);
 }

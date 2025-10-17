@@ -129,9 +129,9 @@ void Simulator::Update() {
     last_time = begin_time;
 
     //if (g_stepCnt > 80) {
-    //    if (timeOutputFile) {
-    //        fclose(timeOutputFile);
-    //        timeOutputFile = nullptr;
+    //    if (timeOutputFile_physical) {
+    //        fclose(timeOutputFile_physical);
+    //        timeOutputFile_physical = nullptr;
     //    }
     //    if (energyOutputFile) {
     //        fclose(energyOutputFile);
@@ -152,12 +152,15 @@ void Simulator::Update() {
             m_solver_mg->Step();
             break;
     }
+    g_stepCnt++;
 
     if (g_synOrAsy) {
         auto begin_time = chrono::high_resolution_clock::now();
         renderOnce();
         auto end_time = chrono::high_resolution_clock::now();
         g_renderDuration = (chrono::duration_cast<chrono::microseconds>(end_time - begin_time)).count();
+        double nowTime = std::chrono::duration_cast<std::chrono::microseconds>(end_time - g_systemBeginTime).count();
+        fprintf(timeOutputFile_render, "%f,%f\n", nowTime / 1000000, g_renderDuration / 1000);
     } else {
         if (mtx.try_lock()) {  // 成功获取锁，此时写顶点数据，否则继续
             // 在四面体顶点中抽取出表面顶点坐标

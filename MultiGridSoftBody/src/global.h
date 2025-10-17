@@ -22,7 +22,8 @@ extern string config_objName;
 extern string config_objName_coarse;
 extern string config_dataDir;
 extern string config_tempDir;
-extern FILE* timeOutputFile;
+extern FILE* timeOutputFile_physical;
+extern FILE* timeOutputFile_render;
 extern FILE* energyOutputFile;
 extern FILE* energyStepFile;
 extern bool config_writeOrReadEnergy;
@@ -51,6 +52,7 @@ extern double g_realDuration;
 extern double g_renderDuration;
 extern double g_totalDuration;
 extern int g_collidedVertCnt;
+extern chrono::steady_clock::time_point g_systemBeginTime;
 
 void doUI();
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
